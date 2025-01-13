@@ -1,0 +1,3 @@
+bc="$gh/battlegeese-25"
+alias cdbc="cd $bc"
+JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
