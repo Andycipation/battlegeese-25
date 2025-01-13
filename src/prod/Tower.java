@@ -9,10 +9,6 @@ public class Tower extends Robot {
 
     static int soldiersProduced = 0;
     
-    public Tower(RobotController rc) {
-        super(rc);
-    }
-
     @Override
     void play() throws GameActionException {
         if (soldiersProduced < 15) {
