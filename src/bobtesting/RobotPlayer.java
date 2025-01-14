@@ -58,6 +58,10 @@ public class RobotPlayer {
     // work on ruin or not
     static Boolean ruin = false;
 
+
+    // late game thres
+    static Integer lateGameThres = 400;
+
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * It is like the main function for your robot. If this method returns, the robot dies!
@@ -155,8 +159,7 @@ public class RobotPlayer {
         // Pick a random robot type to build.
         ArrayList<Integer> choices = new ArrayList<>();
         choices.add(0);
-        if (rc.getChips() > 5e3 || rc.getRoundNum() > 500) {
-            choices.add(1);
+        if (rc.getChips() > 5e3 || rc.getRoundNum() > lateGameThres) {
             choices.add(2);
         }
         int robotType = pickRandom(choices);
@@ -184,7 +187,7 @@ public class RobotPlayer {
 
         // TODO: can we attack other bots?
         // AOE attack
-        rc.attack(null);
+        // rc.attack(null);
 
         // Single target attack lowest hp enemy in range
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().actionRadiusSquared, rc.getTeam().opponent());
@@ -228,6 +231,10 @@ public class RobotPlayer {
             } 
             if (tile.hasRuin() && !isTower) {
                 curRuinLocation = tile.getMapLocation();
+            }
+
+            if (rc.getRoundNum() > lateGameThres && tile.getPaint().isAlly() && tile.getMark() != PaintType.EMPTY && rc.canRemoveMark(tile.getMapLocation())) {
+                rc.removeMark(tile.getMapLocation());
             }
         }
 
@@ -414,29 +421,27 @@ public class RobotPlayer {
 
 
         boolean moved = false;
-        ArrayList<MapLocation> attackLocs = new ArrayList<>();
-        ArrayList<Boolean> useSec = new ArrayList<>();
 
         if (!rc.isActionReady()) return;
+    
+
+        MapInfo currentTile = rc.senseMapInfo(rc.getLocation());
+        if (!currentTile.getPaint().isAlly() && rc.canAttack(rc.getLocation())) {
+            rc.attack(rc.getLocation());
+        }
     
         // Attempt to mop enemy paint
         for (MapInfo tile : nearbyTiles) {
             if (tile.getPaint().isEnemy() && rc.canAttack(tile.getMapLocation()) && tile.getMapLocation().isWithinDistanceSquared(rc.getLocation(), 2)) {
-                attackLocs.add(tile.getMapLocation());
-                useSec.add(tile.getMark().isSecondary());
-
+                rc.attack(tile.getMapLocation());
+                rc.move(rc.getLocation().directionTo(tile.getMapLocation()));
+                moved = true;
                 // rc.attack(tile.getMapLocation());
                 // System.out.println("Attack To: " + tile.getMapLocation());
                 // return;
             }
         }
         
-        
-        int canMopCnt = attackLocs.size();
-
-        if (canMopCnt > 0) {
-            rc.attack(attackLocs.get(0), useSec.get(0));
-        }
 
         if (moved == false) {
             int bro = rng.nextInt(directions.length);
@@ -476,39 +481,6 @@ public class RobotPlayer {
        // Sense information about all visible nearby tiles.
        MapInfo[] nearbyTiles = rc.senseNearbyMapInfos();
        // Search for a nearby ruin to complete.
-       MapInfo curRuin = null;
-       for (MapInfo tile : nearbyTiles){
-           if (tile.hasRuin()){
-               curRuin = tile;
-           }
-       }
-       if (false && curRuin != null){
-           MapLocation targetLoc = curRuin.getMapLocation();
-           Direction dir = rc.getLocation().directionTo(targetLoc);
-           if (rc.canMove(dir))
-               rc.move(dir);
-           // Mark the pattern we need to draw to build a tower here if we haven't already.
-           MapLocation shouldBeMarked = curRuin.getMapLocation().subtract(dir);
-           if (rc.senseMapInfo(shouldBeMarked).getMark() == PaintType.EMPTY && rc.canMarkTowerPattern(UnitType.LEVEL_ONE_PAINT_TOWER, targetLoc)){
-               rc.markTowerPattern(UnitType.LEVEL_ONE_PAINT_TOWER, targetLoc);
-               System.out.println("Trying to build a tower at " + targetLoc);
-           }
-           // Fill in any spots in the pattern with the appropriate paint.
-           for (MapInfo patternTile : rc.senseNearbyMapInfos(targetLoc, 8)){
-               if (patternTile.getMark() != patternTile.getPaint() && patternTile.getMark() != PaintType.EMPTY){
-                   boolean useSecondaryColor = patternTile.getMark() == PaintType.ALLY_SECONDARY;
-                   if (rc.canAttack(patternTile.getMapLocation()))
-                       rc.attack(patternTile.getMapLocation(), useSecondaryColor);
-               }
-           }
-           // Complete the ruin if we can.
-           if (rc.canCompleteTowerPattern(UnitType.LEVEL_ONE_PAINT_TOWER, targetLoc)){
-               rc.completeTowerPattern(UnitType.LEVEL_ONE_PAINT_TOWER, targetLoc);
-               rc.setTimelineMarker("Tower built", 0, 255, 0);
-               System.out.println("Built a tower at " + targetLoc + "!");
-           }
-       }
-
        Direction dir = directions[rng.nextInt(directions.length)];
 
        // keep moving in same direction, otherwise move in random direction
