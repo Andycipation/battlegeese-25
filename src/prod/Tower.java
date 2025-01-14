@@ -9,10 +9,6 @@ public class Tower extends Robot {
 
     static int soldiersProduced = 0;
     
-    public Tower(RobotController rc) {
-        super(rc);
-    }
-
     @Override
     void play() throws GameActionException {
         if (soldiersProduced < 15) {
@@ -30,7 +26,7 @@ public class Tower extends Robot {
         rc.attack(null);
 
         // Single target attack lowest hp enemy in range
-        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(actionRadiusSquared, rc.getTeam().opponent());
         Optional<RobotInfo> target = Arrays.stream(nearbyEnemies).min((a, b) -> Integer.compare(a.getHealth(), b.getHealth()));
         if (target.isPresent()) {
             rc.attack(target.get().getLocation());

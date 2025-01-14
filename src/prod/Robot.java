@@ -2,30 +2,7 @@ package prod;
 
 import battlecode.common.*;
 
-import java.util.Random;
-
-public abstract class Robot {
-
-    final RobotController rc;
-    final Random rng = new Random(1097);
-    final int id;
-    final int mapWidth;
-    final int mapHeight;
-    final UnitType unitType;
-    final int paintCapacity;
-    final int actionRadiusSquared;
-    final int visionRadiusSquared;
-
-    public Robot(RobotController _rc) {
-        rc = _rc;
-        id = rc.getID();
-        mapWidth = rc.getMapWidth();
-        mapHeight = rc.getMapHeight();
-        unitType = rc.getType();
-        paintCapacity = unitType.paintCapacity;
-        actionRadiusSquared = unitType.actionRadiusSquared;
-        visionRadiusSquared = GameConstants.VISION_RADIUS_SQUARED;
-    }
+public abstract class Robot extends Globals {
 
     /**
      * Preform actions at the beginning of the robot's turn.
@@ -48,4 +25,5 @@ public abstract class Robot {
     void endTurn() throws GameActionException {
 
     }
+    
 }

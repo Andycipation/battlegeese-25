@@ -13,10 +13,6 @@ public class Soldier extends Robot {
 
     static MapLocation lastLocation = null;
 
-    public Soldier(RobotController rc) {
-        super(rc);
-    }
-
     @Override
     void play() throws GameActionException {
         // Sense information about all visible nearby tiles.

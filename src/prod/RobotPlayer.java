@@ -7,11 +7,14 @@ public class RobotPlayer {
     static Robot robot;
 
     public static void run(RobotController rc) throws GameActionException {
+        
+        Globals.init(rc);
+        
         switch (rc.getType()) {
-            case SOLDIER: robot = new Soldier(rc); break;
-            case SPLASHER: robot = new Splasher(rc); break;
-            case MOPPER: robot = new Mopper(rc); break;
-            default: robot = new Tower(rc); break;
+            case SOLDIER: robot = new Soldier(); break;
+            case SPLASHER: robot = new Splasher(); break;
+            case MOPPER: robot = new Mopper(); break;
+            default: robot = new Tower(); break;
         }
         while (true) {
             try {
