@@ -9,7 +9,7 @@ public class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         
         Globals.init(rc);
-        
+
         switch (rc.getType()) {
             case SOLDIER: robot = new Soldier(); break;
             case SPLASHER: robot = new Splasher(); break;
@@ -29,6 +29,7 @@ public class RobotPlayer {
                 e.printStackTrace();
                 rc.setTimelineMarker("Exception", 255, 0, 0);
             }
+            Logger.flush();
             Clock.yield();
         }
     }
