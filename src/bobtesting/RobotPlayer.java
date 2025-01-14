@@ -121,18 +121,18 @@ public class RobotPlayer {
     }
 
 
-    public static Integer pickRandom(Integer[] choices) {
-        int idx = rng.nextInt(choices.length);
-        return choices[idx];
+    public static Integer pickRandom(ArrayList<Integer> choices) {
+        int idx = rng.nextInt(choices.size());
+        return choices.get(idx);
     }
 
-    public static Integer pickEqual(Integer[] choices) {
+    public static Integer pickEqual(ArrayList<Integer>  choices) {
         int min = 10000;
         int cur = 10000;
-        for (int i = 0; i < choices.length; i++) {
-            if (robotTypeCount[choices[i]] < min) {
-                min = robotTypeCount[choices[i]];
-                cur = choices[i];
+        for (int i = 0; i < choices.size(); i++) {
+            if (robotTypeCount[choices.get(i)] < min) {
+                min = robotTypeCount[choices.get(i)];
+                cur = choices.get(i);
             }
         }
         return cur;
@@ -153,7 +153,11 @@ public class RobotPlayer {
         MapLocation nextLoc = rc.getLocation().add(dir);
 
         // Pick a random robot type to build.
-        Integer[] choices = {0, 0, 0, 0};
+        ArrayList<Integer> choices = new ArrayList<>();
+        choices.add(0);
+        if (rc.getChips() > 1e4) {
+            choices.add(1);
+        }
         int robotType = pickRandom(choices);
         if (robotType == 0 && rc.canBuildRobot(UnitType.SOLDIER, nextLoc)){
             rc.buildRobot(UnitType.SOLDIER, nextLoc);
@@ -178,6 +182,15 @@ public class RobotPlayer {
         }
 
         // TODO: can we attack other bots?
+        // AOE attack
+        rc.attack(null);
+
+        // Single target attack lowest hp enemy in range
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(rc.getType().actionRadiusSquared, rc.getTeam().opponent());
+        Optional<RobotInfo> target = Arrays.stream(nearbyEnemies).min((a, b) -> Integer.compare(a.getHealth(), b.getHealth()));
+        if (target.isPresent()) {
+            rc.attack(target.get().getLocation());
+        }
     }
 
     /**
@@ -228,12 +241,45 @@ public class RobotPlayer {
 
         if (curRuinLocation != null) {
             targetLoc = curRuinLocation;
+            boolean ruinHasTower = false;
+
             // Complete the ruin if we can.
             UnitType[] towersToConsider = {UnitType.LEVEL_ONE_PAINT_TOWER, UnitType.LEVEL_ONE_MONEY_TOWER};
             for (UnitType towerType : towersToConsider) {
                 if (rc.canCompleteTowerPattern(towerType, targetLoc)){
+                    ruinHasTower = true;
                     rc.completeTowerPattern(towerType, targetLoc);
                     rc.setTimelineMarker("Tower built", 0, 255, 0);
+                }
+            }
+            // // // remove ruin pattern after done
+            // if (ruinHasTower) {
+            //     MapLocation ruinLoc = targetLoc;
+            //     for (int dx = -GameConstants.PATTERN_SIZE / 2; dx < (GameConstants.PATTERN_SIZE + 1) / 2; dx++) {
+            //         for (int dy = -GameConstants.PATTERN_SIZE / 2; dy < (GameConstants.PATTERN_SIZE + 1) / 2; dy++) {
+            //             MapLocation loc = ruinLoc.translate(dx, dy);
+            //             if (!rc.canSenseLocation(loc)) continue;
+            //             MapInfo tile = rc.senseMapInfo(ruinLoc.translate(dx, dy));
+            //             if (tile.getMark() != PaintType.EMPTY && rc.canRemoveMark(loc)) {
+            //                  rc.removeMark(loc);
+            //             }
+            //         }
+            //     }
+            // }
+
+        }
+
+
+        // upgrade tower if possible
+
+        for (MapInfo tile : nearbyTiles) {
+            // Check if the tile contains a tower of your team
+            RobotInfo tower = rc.senseRobotAtLocation(tile.getMapLocation());
+            if (tower != null && tower.getType().isTowerType() && tower.getTeam() == rc.getTeam()) {
+                // Check if the tower can be upgraded
+                if (rc.canUpgradeTower(tower.getLocation())) {
+                    rc.upgradeTower(tower.getLocation());
+                    System.out.println("Upgraded tower at: " + tower.getLocation());
                 }
             }
         }
@@ -245,6 +291,8 @@ public class RobotPlayer {
 
             Direction dir = rc.getLocation().directionTo(targetLoc);
                 
+
+
             // Mark the pattern we need to draw to build a tower here if we haven't already.
             MapLocation shouldBeMarked = curRuinLocation.subtract(dir);
             if (rc.senseMapInfo(shouldBeMarked).getMark() == PaintType.EMPTY && rc.canMarkTowerPattern(UnitType.LEVEL_ONE_PAINT_TOWER, targetLoc)){
@@ -257,6 +305,9 @@ public class RobotPlayer {
                 }
                 System.out.println("Trying to build a tower at " + targetLoc);
             }
+
+
+
 
             ArrayList<MapLocation> attackLocs = new ArrayList<>();
             ArrayList<Boolean> useSec = new ArrayList<>();
@@ -289,14 +340,15 @@ public class RobotPlayer {
             timeRuin = 0;
         }
 
-        // // Try to paint beneath us as we walk to avoid paint penalties.
-        // // Avoiding wasting paint by re-painting our own tiles.
-        // MapInfo currentTile = rc.senseMapInfo(rc.getLocation());
-        // if (rc.canAttack(rc.getLocation()) 
-        // && (!currentTile.getPaint().isAlly() 
-        //         || (currentTile.getPaint().isAlly() && (currentTile.getPaint().isSecondary() != currentTile.getMark().isSecondary())))){
-        //     rc.attack(rc.getLocation());
-        // }
+
+
+
+        // if badarded robot painted mark wrong
+        MapInfo currentTile = rc.senseMapInfo(rc.getLocation());
+        if (rc.canAttack(rc.getLocation()) 
+        && (currentTile.getPaint().isAlly() && (currentTile.getPaint().isSecondary() != currentTile.getMark().isSecondary()))){
+            rc.attack(rc.getLocation());
+        }
 
 
         // try to paint resource pattern packing pattern
