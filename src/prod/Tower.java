@@ -8,10 +8,15 @@ import battlecode.common.*;
 public class Tower extends Robot {
 
     static int soldiersProduced = 0;
+
+    Tower() {
+        super();
+    }
     
     @Override
     void play() throws GameActionException {
-        if (soldiersProduced < 15) {
+        boolean produceSoldier = soldiersProduced < 2 || (rc.getNumberTowers() > 4 && soldiersProduced < 15);
+        if (produceSoldier) {
             for (Direction dir : Direction.allDirections()) {
                 MapLocation nextLoc = rc.getLocation().add(dir);
                 if (rc.canBuildRobot(UnitType.SOLDIER, nextLoc)) {
