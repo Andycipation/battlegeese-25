@@ -11,8 +11,6 @@ public class Soldier extends Robot {
 
     static MapLocation paintTowerAnchor = null;
 
-    static MapLocation lastLocation = null;
-
     static MapLocation[] srpCenters = new MapLocation[1000];
     static int numSrpCenters = 0;
 
@@ -105,20 +103,19 @@ public class Soldier extends Robot {
         }
         else {
             if (towerSoldier) {
-                greedTower();
-                greedSrp();
+                boolean success = greedTower();
+                if (!success) greedSrp();
             }
             else {
                 greedSrp();
+                if (rc.isActionReady()) greedyPaint();
+                if (rc.isActionReady()) greedyAttack();
             }
             Logger.log(targetSrpCenter != null ? targetSrpCenter.toString() : "null");
         }
-        
-        Logger.log("Paint tower anchor: " + paintTowerAnchor);
-        Logger.log("Last location: " + paintTowerAnchor);
     }
 
-    public static void greedTower() throws GameActionException {
+    public static boolean greedTower() throws GameActionException {
         // Search for a nearby ruin to complete.
         MapLocation ruinLoc = null;
         for (MapLocation loc : rc.senseNearbyRuins(visionRadiusSquared)) {
@@ -139,7 +136,7 @@ public class Soldier extends Robot {
             Direction dir = rc.getLocation().directionTo(targetLoc);
             if (rc.canMove(dir)) {
                 rc.move(dir);
-                Logger.log("Tower");
+                Logger.log("Tower" + targetLoc);
             }
             // Mark the pattern we need to draw to build a tower here if we haven't already. Pick a random tower of {paint, money} to build.
             MapLocation shouldBeMarked = ruinLoc.subtract(dir);
@@ -150,16 +147,20 @@ public class Soldier extends Robot {
             // Fill in any spots in the pattern with the appropriate paint.
             for (MapInfo patternTile : rc.senseNearbyMapInfos(targetLoc, actionRadiusSquared)){
                 if (!withinPattern(targetLoc, patternTile.getMapLocation())) continue;
-                if (patternTile.getMark() != patternTile.getPaint() && patternTile.getMark() != PaintType.EMPTY){
+                if (patternTile.getMark() != patternTile.getPaint() && patternTile.getMark() != PaintType.EMPTY && !patternTile.getPaint().isEnemy()){
                     boolean useSecondaryColor = patternTile.getMark() == PaintType.ALLY_SECONDARY;
-                    if (rc.canAttack(patternTile.getMapLocation()))
+                    Logger.log("here" + patternTile.getMapLocation());
+                    if (rc.canAttack(patternTile.getMapLocation())) {
                         rc.attack(patternTile.getMapLocation(), useSecondaryColor);
+                        break;
+                    }
                     else {
                         Direction delta = rc.getLocation().directionTo(patternTile.getMapLocation());
                         if (rc.canMove(delta)) rc.move(delta);
-                        if (rc.canAttack(patternTile.getMapLocation()))
+                        if (rc.canAttack(patternTile.getMapLocation())) {
                             rc.attack(patternTile.getMapLocation(), useSecondaryColor);
-                        break;
+                            break;
+                        }
                     }
                 }
             }
@@ -185,6 +186,7 @@ public class Soldier extends Robot {
                 }
             }
         }
+        return (ruinLoc != null && !ruinHasTower);
     }
 
     public static void greedSrp() throws GameActionException {
@@ -245,8 +247,28 @@ public class Soldier extends Robot {
                 }
             }
         }
-        
+    }
 
+    public static void greedyPaint() throws GameActionException {
+        // Paint any tile that this unit can see
+        for (MapInfo tile : rc.senseNearbyMapInfos()) {
+            MapLocation loc = tile.getMapLocation();
+            PaintType preferredPaintType = getPreferedPaintType(loc);
+            if (rc.canPaint(loc) && rc.canAttack(loc) && tile.getPaint() != preferredPaintType && !tile.getMark().isAlly()) {
+                boolean useSecondaryColor = preferredPaintType == PaintType.ALLY_SECONDARY;
+                rc.attack(loc, useSecondaryColor);
+            }
+        }
+    }
+
+    public static void greedyAttack() throws GameActionException {
+        // Attack any tower that this unit can see
+        for (MapInfo tile : rc.senseNearbyMapInfos()) {
+            MapLocation loc = tile.getMapLocation();
+            if (tile.hasRuin() && rc.canAttack(loc)) {
+                rc.attack(loc);
+            }
+        }
     }
     
 }

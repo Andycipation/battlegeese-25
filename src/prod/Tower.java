@@ -12,18 +12,37 @@ public class Tower extends Robot {
     Tower() {
         super();
     }
+
+    private boolean produceUnit(UnitType unitType) throws GameActionException {
+        for (Direction dir : Direction.allDirections()) {
+            MapLocation nextLoc = rc.getLocation().add(dir);
+            if (rc.canBuildRobot(unitType, nextLoc)) {
+                soldiersProduced++;
+                rc.buildRobot(unitType, nextLoc);
+                return true;
+            }
+        }
+        return false;
+    }
     
     @Override
     void play() throws GameActionException {
-        boolean produceSoldier = soldiersProduced < 2 || (rc.getNumberTowers() > 4 && soldiersProduced < 15);
-        if (produceSoldier) {
-            for (Direction dir : Direction.allDirections()) {
-                MapLocation nextLoc = rc.getLocation().add(dir);
-                if (rc.canBuildRobot(UnitType.SOLDIER, nextLoc)) {
-                    soldiersProduced++;
-                    rc.buildRobot(UnitType.SOLDIER, nextLoc);
-                    break;
-                }
+        boolean produceUnit = false;
+        if (soldiersProduced < 2) produceUnit = true;
+        else if (rc.getNumberTowers() > 4 && soldiersProduced < 10) produceUnit = true;
+        else if (rc.getChips() >= 5000) produceUnit = true;
+
+        if (produceUnit) {
+            boolean produceSoldier = true;
+            if (rng.nextInt(rc.getNumberTowers() / 2 + 1) != 0) {
+                produceSoldier = false;
+            }
+            if (produceSoldier) {
+                produceUnit(UnitType.SOLDIER);
+                soldiersProduced++;
+            }
+            else {
+                produceUnit(UnitType.SPLASHER);
             }
         }
 

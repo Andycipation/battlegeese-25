@@ -54,5 +54,9 @@ public class Globals {
     public static double getPaintProportion() {
         return (double)rc.getPaint() / (rc.getType().paintCapacity);
     }
+
+    public static MapLocation randomMapLocation() {
+        return new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
+    }
     
 }
