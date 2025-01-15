@@ -1,4 +1,4 @@
-package prodcopy;
+package prod_v1;
 
 import battlecode.common.MapLocation;
 

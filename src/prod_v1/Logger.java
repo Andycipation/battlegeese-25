@@ -1,4 +1,4 @@
-package prodcopy;
+package prod_v1;
 
 public class Logger extends Globals {
     private static StringBuilder sb = new StringBuilder();

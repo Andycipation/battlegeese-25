@@ -1,4 +1,4 @@
-package prodcopy;
+package prod_v2;
 
 import battlecode.common.*;
 
@@ -9,7 +9,7 @@ public class Globals {
     public static RobotController rc;
     public static int id;
     
-    public static Random rng = new Random(1097);
+    public static Random rng;
 
     public static int mapWidth;
     public static int mapHeight;
@@ -37,6 +37,7 @@ public class Globals {
     public static void init(RobotController _rc) {
         rc = _rc;
         id = rc.getID();
+        rng = new Random(id);
 
         mapWidth = rc.getMapWidth();
         mapHeight = rc.getMapHeight();
@@ -48,6 +49,14 @@ public class Globals {
 
         myTeam = rc.getTeam();
         opponentTeam =  myTeam.opponent();
+    }
+
+    public static double getPaintProportion() {
+        return (double)rc.getPaint() / (rc.getType().paintCapacity);
+    }
+
+    public static MapLocation randomLocation() {
+        return new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
     }
     
 }
