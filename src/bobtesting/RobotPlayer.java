@@ -1,7 +1,6 @@
-package bobtesting;
+package bobtesting; import bobtesting.Hyperparameter;
 
 import battlecode.common.*;
-import bobtesting.Hyperparameter;
 
 import java.lang.reflect.Array;
 import java.util.*;
