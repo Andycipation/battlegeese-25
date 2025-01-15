@@ -1,6 +1,7 @@
 package bobtesting;
 
 import battlecode.common.*;
+import bobtesting.Hyperparameter;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -60,7 +61,7 @@ public class RobotPlayer {
 
 
     // late game thres
-    static Integer lateGameThres = 400;
+    static Integer lateGameCountThres = 500;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -148,7 +149,9 @@ public class RobotPlayer {
      */
     public static void runTower(RobotController rc) throws GameActionException{
 
-        if (rc.getChips() < 1250) {
+        int ok = Hyperparameter.noSpawnThresEarly;
+        if (rc.getRoundNum() > Hyperparameter.lateGameCountThres) ok = Hyperparameter.noSpawnThresLate;
+        if (rc.getChips() < ok) {
             return;
         }
 
@@ -159,7 +162,7 @@ public class RobotPlayer {
         // Pick a random robot type to build.
         ArrayList<Integer> choices = new ArrayList<>();
         choices.add(0);
-        if (rc.getChips() > 5e3 || rc.getRoundNum() > lateGameThres) {
+        if (rc.getChips() > Hyperparameter.lateGameChipThres || rc.getRoundNum() > Hyperparameter.lateGameCountThres) {
             choices.add(2);
         }
         int robotType = pickRandom(choices);
@@ -233,7 +236,7 @@ public class RobotPlayer {
                 curRuinLocation = tile.getMapLocation();
             }
 
-            if (rc.getRoundNum() > lateGameThres && tile.getPaint().isAlly() && tile.getMark() != PaintType.EMPTY && rc.canRemoveMark(tile.getMapLocation())) {
+            if (rc.getRoundNum() > Hyperparameter.lateGameCountThres && tile.getPaint().isAlly() && tile.getMark() != PaintType.EMPTY && rc.canRemoveMark(tile.getMapLocation())) {
                 rc.removeMark(tile.getMapLocation());
             }
         }
@@ -248,10 +251,10 @@ public class RobotPlayer {
 
         prevRuinMapLocation = curRuinLocation;
 
-        if (timeRuin > 15) {
+        if (timeRuin > Hyperparameter.timeRuin) {
             ruin = false;
             timeRuin = 0;
-        } else if (timeTravel > 10){
+        } else if (timeTravel > Hyperparameter.timeTravel){
             ruin = true;
             timeTravel = 0;
         }
@@ -299,8 +302,10 @@ public class RobotPlayer {
             // Mark the pattern we need to draw to build a tower here if we haven't already.
             MapLocation shouldBeMarked = curRuinLocation.subtract(dir);
             if (rc.senseMapInfo(shouldBeMarked).getMark() == PaintType.EMPTY && rc.canMarkTowerPattern(UnitType.LEVEL_ONE_PAINT_TOWER, targetLoc)){
-                int ok = rng.nextInt(12);
-                if (ok < 4) {
+                int ok = rng.nextInt(100);
+                int thres = Hyperparameter.paintToMoneyEarly;
+                if (rc.getRoundNum() > Hyperparameter.lateGameCountThres) thres = Hyperparameter.paintToMoneyLate;
+                if (ok < thres) {
                     rc.markTowerPattern(UnitType.LEVEL_ONE_PAINT_TOWER, targetLoc);
                 } else {
                     rc.setTimelineMarker("Tower marked", 255, 0, 0);
