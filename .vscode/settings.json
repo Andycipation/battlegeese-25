@@ -1,5 +1,13 @@
 {
   "[java]": {
-    "editor.tabSize": 4
-  }
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": null
+  },
+  "jdk.java.onSave.organizeImports": false,
+  "[python]": {
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.wordBasedSuggestions": "off",
+    "editor.tabSize": 4,
+  },
+  "python.analysis.autoImportCompletions": true
 }
