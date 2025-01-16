@@ -1,22 +1,21 @@
 package template;
 
-import battlecode.common.*;
+import battlecode.common.GameActionException;
 
-public abstract class Robot extends Globals {
-
-    /**
+public abstract class Unit extends Robot {
+        /**
      * Preform actions at the beginning of the robot's turn.
      * Here we can record new information, update robot state, etc...
      */
     void initTurn() throws GameActionException {
-
+        super.initTurn();
     }
 
     /**
      * Preform main robot turn actions. This includes moving and attacking.
      */
     void play() throws GameActionException {
-        
+        super.play();
     }
 
     /**
@@ -25,7 +24,7 @@ public abstract class Robot extends Globals {
      * span across several turns.
      */
     void endTurn() throws GameActionException {
+        super.initTurn();
 
     }
-    
 }

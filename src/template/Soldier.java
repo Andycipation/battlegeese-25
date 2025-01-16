@@ -2,7 +2,7 @@ package template;
 
 import battlecode.common.*;
 
-public class Soldier extends Robot {
+public class Soldier extends Unit {
 
     @Override
     void play() throws GameActionException {
