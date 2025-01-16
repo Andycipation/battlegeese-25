@@ -50,6 +50,14 @@ public class Globals {
         opponentTeam =  myTeam.opponent();
     }
 
+    public static double getPaintProportion() {
+        return (double)rc.getPaint() / (rc.getType().paintCapacity);
+    }
+
+    public static MapLocation randomMapLocation() {
+        return new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
+    }
+
     /**
      * Picks a random integer 0-1 with P[i] = wi / sum_i wi
      */

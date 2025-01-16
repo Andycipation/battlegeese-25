@@ -3,12 +3,13 @@ package template;
 import battlecode.common.GameActionException;
 
 public abstract class Unit extends Robot {
-        /**
+    /**
      * Preform actions at the beginning of the robot's turn.
      * Here we can record new information, update robot state, etc...
      */
     void initTurn() throws GameActionException {
         super.initTurn();
+
     }
 
     /**
