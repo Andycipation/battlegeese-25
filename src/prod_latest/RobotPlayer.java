@@ -1,7 +1,6 @@
 package prod_latest;
 
 import battlecode.common.*;
-import battlecode.schema.GameplayConstants;
 
 public class RobotPlayer extends Globals {
 

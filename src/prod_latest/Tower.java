@@ -1,8 +1,5 @@
 package prod_latest;
 
-import java.util.Arrays;
-import java.util.Optional;
-
 import battlecode.common.*;
 
 public class Tower extends Robot {
