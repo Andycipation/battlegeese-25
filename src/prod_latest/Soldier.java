@@ -232,18 +232,21 @@ public class Soldier extends Unit {
             }
             else targetRuinCooldown--;
 
+            // Kiting!
+            // TODO: combine this into a single for loop, need too loop in max.
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 MapInfo tile = nearbyMapInfos[i];
                 MapLocation loc = tile.getMapLocation();
                 RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
                 if (prevLoc != null && !prevLoc.isWithinDistanceSquared(loc, actionRadiusSquared)
                 && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo)) {
-                   rc.setTimelineMarker("Kiting time!", 0, 255, 0);
+                //    rc.setTimelineMarker("Kiting time!", 0, 255, 0);
                    switchStrategy(new KitingStrategy(prevLoc, curLoc, loc));
                    return;
                }
             }
             prevLoc = curLoc;
+
             BugNav.moveToward(target);
             boolean painted = tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
             if (!painted) {
