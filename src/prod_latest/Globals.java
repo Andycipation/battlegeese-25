@@ -33,6 +33,18 @@ public class Globals {
         Direction.SOUTHWEST,
         Direction.NORTHWEST
     };
+    public static Direction[] cardinalDirections = {
+        Direction.NORTH,
+        Direction.EAST,
+        Direction.SOUTH,
+        Direction.WEST
+    };
+    public static Direction[] diagonalDirections = {
+        Direction.NORTHEAST,
+        Direction.SOUTHEAST,
+        Direction.SOUTHWEST,
+        Direction.NORTHWEST,
+    };
     
     public static boolean[][] paintTowerPattern;
     public static boolean[][] defenseTowerPattern;
