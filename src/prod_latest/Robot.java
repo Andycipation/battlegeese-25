@@ -10,7 +10,8 @@ public abstract class Robot extends Globals {
     public static MapLocation curLoc;
     public static int numTowers;
     public static int roundNum;
-    public static int numAllyAdjacent[][];
+    // numAllyAdjacent is indexed by the same was as Direction.getDirectionOrderNum
+    public static int numAllyAdjacent[];
 
     /**
      * Preform actions at the beginning of the robot's turn.
@@ -23,38 +24,39 @@ public abstract class Robot extends Globals {
         curLoc = rc.getLocation();
         numTowers = rc.getNumberTowers();
         roundNum = rc.getRoundNum();
-        numAllyAdjacent = new int[3][3];
+        numAllyAdjacent = new int[9];
         for (int i = nearbyAllyRobots.length; --i >= 0;) {
             MapLocation diff = nearbyAllyRobots[i].getLocation().translate(-curLoc.x, -curLoc.y);
             System.out.println("" + diff);
             switch (diff.x * 10 + diff.y) {
-                case -22: numAllyAdjacent[0][0]++; break;
-                case -21: numAllyAdjacent[0][0]++; numAllyAdjacent[0][1]++; break;
-                case -20: numAllyAdjacent[0][0]++; numAllyAdjacent[0][1]++; numAllyAdjacent[0][2]++; break;
-                case -19: numAllyAdjacent[0][1]++; numAllyAdjacent[0][2]++; break;
-                case -18: numAllyAdjacent[0][2]++; break;
-                case -12: numAllyAdjacent[0][0]++; numAllyAdjacent[1][0]++; break;
-                case -11: numAllyAdjacent[0][0]++; numAllyAdjacent[0][1]++; numAllyAdjacent[1][0]++; numAllyAdjacent[1][1]++; break;
-                case -10: numAllyAdjacent[0][0]++; numAllyAdjacent[0][1]++; numAllyAdjacent[0][2]++; numAllyAdjacent[1][0]++; numAllyAdjacent[1][1]++; numAllyAdjacent[1][2]++; break;
-                case -9: numAllyAdjacent[0][1]++; numAllyAdjacent[0][2]++; numAllyAdjacent[1][1]++; numAllyAdjacent[1][2]++; break;
-                case -8: numAllyAdjacent[0][2]++; numAllyAdjacent[1][2]++; break;
-                case -2: numAllyAdjacent[0][0]++; numAllyAdjacent[1][0]++; numAllyAdjacent[2][0]++; break;
-                case -1: numAllyAdjacent[0][0]++; numAllyAdjacent[0][1]++; numAllyAdjacent[1][0]++; numAllyAdjacent[1][1]++; numAllyAdjacent[2][0]++; numAllyAdjacent[2][1]++; break;
-                case 0: numAllyAdjacent[0][0]++; numAllyAdjacent[0][1]++; numAllyAdjacent[0][2]++; numAllyAdjacent[1][0]++; numAllyAdjacent[1][1]++; numAllyAdjacent[1][2]++; numAllyAdjacent[2][0]++; numAllyAdjacent[2][1]++; numAllyAdjacent[2][2]++; break;
-                case 1: numAllyAdjacent[0][1]++; numAllyAdjacent[0][2]++; numAllyAdjacent[1][1]++; numAllyAdjacent[1][2]++; numAllyAdjacent[2][1]++; numAllyAdjacent[2][2]++; break;
-                case 2: numAllyAdjacent[0][2]++; numAllyAdjacent[1][2]++; numAllyAdjacent[2][2]++; break;
-                case 8: numAllyAdjacent[1][0]++; numAllyAdjacent[2][0]++; break;
-                case 9: numAllyAdjacent[1][0]++; numAllyAdjacent[1][1]++; numAllyAdjacent[2][0]++; numAllyAdjacent[2][1]++; break;
-                case 10: numAllyAdjacent[1][0]++; numAllyAdjacent[1][1]++; numAllyAdjacent[1][2]++; numAllyAdjacent[2][0]++; numAllyAdjacent[2][1]++; numAllyAdjacent[2][2]++; break;
-                case 11: numAllyAdjacent[1][1]++; numAllyAdjacent[1][2]++; numAllyAdjacent[2][1]++; numAllyAdjacent[2][2]++; break;
-                case 12: numAllyAdjacent[1][2]++; numAllyAdjacent[2][2]++; break;
-                case 18: numAllyAdjacent[2][0]++; break;
-                case 19: numAllyAdjacent[2][0]++; numAllyAdjacent[2][1]++; break;
-                case 20: numAllyAdjacent[2][0]++; numAllyAdjacent[2][1]++; numAllyAdjacent[2][2]++; break;
-                case 21: numAllyAdjacent[2][1]++; numAllyAdjacent[2][2]++; break;
-                case 22: numAllyAdjacent[2][2]++; break;
+                case -22: numAllyAdjacent[8]++; break;
+                case -21: numAllyAdjacent[8]++; numAllyAdjacent[1]++; break;
+                case -20: numAllyAdjacent[8]++; numAllyAdjacent[1]++; numAllyAdjacent[2]++; break;
+                case -19: numAllyAdjacent[1]++; numAllyAdjacent[2]++; break;
+                case -18: numAllyAdjacent[2]++; break;
+                case -12: numAllyAdjacent[8]++; numAllyAdjacent[7]++; break;
+                case -11: numAllyAdjacent[8]++; numAllyAdjacent[1]++; numAllyAdjacent[7]++; numAllyAdjacent[0]++; break;
+                case -10: numAllyAdjacent[8]++; numAllyAdjacent[1]++; numAllyAdjacent[2]++; numAllyAdjacent[7]++; numAllyAdjacent[0]++; numAllyAdjacent[3]++; break;
+                case -9: numAllyAdjacent[1]++; numAllyAdjacent[2]++; numAllyAdjacent[0]++; numAllyAdjacent[3]++; break;
+                case -8: numAllyAdjacent[2]++; numAllyAdjacent[3]++; break;
+                case -2: numAllyAdjacent[8]++; numAllyAdjacent[7]++; numAllyAdjacent[6]++; break;
+                case -1: numAllyAdjacent[8]++; numAllyAdjacent[1]++; numAllyAdjacent[7]++; numAllyAdjacent[0]++; numAllyAdjacent[6]++; numAllyAdjacent[5]++; break;
+                case 0: numAllyAdjacent[8]++; numAllyAdjacent[1]++; numAllyAdjacent[2]++; numAllyAdjacent[7]++; numAllyAdjacent[0]++; numAllyAdjacent[3]++; numAllyAdjacent[6]++; numAllyAdjacent[5]++; numAllyAdjacent[4]++; break;
+                case 1: numAllyAdjacent[1]++; numAllyAdjacent[2]++; numAllyAdjacent[0]++; numAllyAdjacent[3]++; numAllyAdjacent[5]++; numAllyAdjacent[4]++; break;
+                case 2: numAllyAdjacent[2]++; numAllyAdjacent[3]++; numAllyAdjacent[4]++; break;
+                case 8: numAllyAdjacent[7]++; numAllyAdjacent[6]++; break;
+                case 9: numAllyAdjacent[7]++; numAllyAdjacent[0]++; numAllyAdjacent[6]++; numAllyAdjacent[5]++; break;
+                case 10: numAllyAdjacent[7]++; numAllyAdjacent[0]++; numAllyAdjacent[3]++; numAllyAdjacent[6]++; numAllyAdjacent[5]++; numAllyAdjacent[4]++; break;
+                case 11: numAllyAdjacent[0]++; numAllyAdjacent[3]++; numAllyAdjacent[5]++; numAllyAdjacent[4]++; break;
+                case 12: numAllyAdjacent[3]++; numAllyAdjacent[4]++; break;
+                case 18: numAllyAdjacent[6]++; break;
+                case 19: numAllyAdjacent[6]++; numAllyAdjacent[5]++; break;
+                case 20: numAllyAdjacent[6]++; numAllyAdjacent[5]++; numAllyAdjacent[4]++; break;
+                case 21: numAllyAdjacent[5]++; numAllyAdjacent[4]++; break;
+                case 22: numAllyAdjacent[4]++; break;
             }
         }
+        Logger.log("" + Clock.getBytecodeNum());
         // relatively cheap startup, takes around <1000 bytecodes up to here even when cluttered
     }
 
