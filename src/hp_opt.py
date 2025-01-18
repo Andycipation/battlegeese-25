@@ -70,7 +70,7 @@ def play_game(squid_a, squid_b):
     # Step 3: Run a command in the parent directory
     a = 0
     b = 0
-    for map in ["DefaultSmall"]:
+    for map in ["DefaultSmall", "DefaultMedium", "DefaultLarge", "DefaultHuge"]:
         command = f"./gradlew run -Pmaps={map} -PteamA={dest_a} -PteamB={dest_b} -PoutputVerbose=false"  # Replace with your command
         result = str(subprocess.run(command, shell=True, capture_output=True, text=True))
         idx = result.find(") wins")-1
@@ -78,7 +78,12 @@ def play_game(squid_a, squid_b):
         if winner == "A": a += 1
         else: b += 1
     os.chdir(current_directory)
-    return a > b
+    if a > b:
+        return 1
+    elif a < b:
+        return 0
+    else:
+        return -1
 
 
 
@@ -151,6 +156,7 @@ squids = get_squids(num_squids)
 # play_game(squids[0], squids[1])
 
 for _ in range(num_games):
+    start = time.time()
     print(f"Playing round {_}: ")
     wins = [0]*num_squids
     for i in range(num_squids):
@@ -161,11 +167,16 @@ for _ in range(num_games):
                 # print("A wins!!")
                 print(f"Squid: {squids[i][1]} beats {squids[j][1]}")
                 wins[i] += 1
-            else: 
+            elif res == 0: 
                 # print("B wins!!")
                 print(f"Squid: {squids[j][1]} beats {squids[i][1]}")
                 wins[j] += 1
-    
+            else:
+                print(f"Squid: {squids[i][1]} ties {squids[j][1]}")
+
+    end = time.time()
+    elapsed = end-start
+    print(f"Finished this round, took {elapsed:.2f} seconds")
     ranked_squids = []
     for i in range(num_squids):
         ranked_squids.append((wins[i], squids[i]))

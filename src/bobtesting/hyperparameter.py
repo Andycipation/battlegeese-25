@@ -5,14 +5,14 @@ import os
 # param 1: lower bound (inclusive)
 # param 2: upper bound (inclusive)
 hyperparameters = {
-    "lateGameCountThres" : (600, 0, 2000),
-    "paintToMoneyEarly" : (50, 0, 100),
-    "paintToMoneyLate" : (75, 0, 100),
-    "timeRuin" : (15, 0, 25),
-    "timeTravel" : (5, 0, 25),
+    "lateGameCountThres" : (600, 0, 600),
+    "paintToMoneyEarly" : (50, 20, 80),
+    "paintToMoneyLate" : (75, 30, 90),
+    "timeRuin" : (15, 5, 25),
+    "timeTravel" : (5, 2, 12),
     "noSpawnThresEarly" : (1250, 1000, 1500),
-    "noSpawnThresLate" : (5000, 1000, 10000),
-    "lateGameChipThres" : (5000, 2000, 20000),
+    "noSpawnThresLate" : (5000, 1250, 7000),
+    "lateGameChipThres" : (5000, 3000, 10000),
 }
 
 f = open("Hyperparameter.java", "w")
