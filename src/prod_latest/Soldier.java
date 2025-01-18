@@ -6,6 +6,8 @@ public class Soldier extends Unit {
 
     public static SoldierStrategy strategy;
 
+    public static MapLocation prevLoc = null;
+
     public static boolean tryPaint(MapLocation loc, PaintType paintType) throws GameActionException {
         if (rc.isActionReady() && rc.canAttack(loc) && rc.canPaint(loc) && rc.senseMapInfo(loc).getPaint() != paintType) {
             rc.attack(loc, paintType == PaintType.ALLY_SECONDARY);
@@ -16,6 +18,18 @@ public class Soldier extends Unit {
 
     public static boolean tryPaintBelowSelf(PaintType paintType) throws GameActionException {
         return tryPaint(rc.getLocation(), paintType);
+    }
+
+    public static boolean tryAttack(MapLocation loc) throws GameActionException {
+        if (rc.isActionReady() && rc.canAttack(loc)) {
+            rc.attack(loc);
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isEnemyTower(RobotInfo robotInfo) {
+        return robotInfo.getType().isTowerType() && robotInfo.getTeam() == rc.getTeam().opponent();
     }
 
     public static boolean withinPattern(MapLocation center, MapLocation loc) {
@@ -146,12 +160,20 @@ public class Soldier extends Unit {
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 MapInfo tile = nearbyMapInfos[i];
                 MapLocation loc = tile.getMapLocation();
-                if (tile.hasRuin() && rc.senseRobotAtLocation(loc) == null) {
+                RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
+                if (tile.hasRuin() && robotInfo == null) {
                     switchStrategy(new BuildTowerStrategy(loc));
+                    return;
+                } 
+
+                if (prevLoc != null && !prevLoc.isWithinDistanceSquared(loc, actionRadiusSquared)
+                 && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo)) {
+                    // rc.setTimelineMarker("Kiting time!", 0, 255, 0);
+                    switchStrategy(new KitingStrategy(prevLoc, curLoc, loc));
                     return;
                 }
             }
-
+            prevLoc = curLoc;
             BugNav.moveToward(target);
             boolean painted = tryPaintBelowSelf(PaintType.ALLY_PRIMARY);
             if (!painted) {
@@ -182,6 +204,41 @@ public class Soldier extends Unit {
     
         public String toString() {
             return "Explore " + turnsLeft + " " + target;
+        }
+    }
+
+    static class KitingStrategy extends SoldierStrategy {
+        public static MapLocation outRangeLoc;
+        public static MapLocation inRangeLoc; 
+        public static MapLocation target;
+        public static int turnsMoved = 0;
+        
+        KitingStrategy(MapLocation _outRangeLoc, MapLocation _inRangeLoc, MapLocation _target) {
+            outRangeLoc = _outRangeLoc;
+            inRangeLoc = _inRangeLoc;
+            target = _target;
+        }
+
+        public void act() throws GameActionException {
+            // check if target is still alive
+            RobotInfo robotInfo = rc.senseRobotAtLocation(target);
+            if (robotInfo == null) {
+                yieldStrategy();
+            }
+
+            if ((turnsMoved & 1) == 0) {
+                tryAttack(target);
+                BugNav.moveToward(outRangeLoc);
+            } else {
+                BugNav.moveToward(inRangeLoc);
+                tryAttack(target);
+            }
+            turnsMoved++;
+            System.out.println(toString());
+        }
+
+        public String toString() {
+            return "Kiting " + outRangeLoc + " " + inRangeLoc + " " + target; 
         }
     }
 }
