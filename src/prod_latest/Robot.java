@@ -25,7 +25,8 @@ public abstract class Robot extends Globals {
         roundNum = rc.getRoundNum();
         numAllyAdjacent = new int[3][3];
         for (int i = nearbyAllyRobots.length; --i >= 0;) {
-            MapLocation diff = nearbyAllyRobots[i].getLocation().translate(curLoc.x, curLoc.y);
+            MapLocation diff = nearbyAllyRobots[i].getLocation().translate(-curLoc.x, -curLoc.y);
+            System.out.println("" + diff);
             switch (diff.x * 10 + diff.y) {
                 case -22: numAllyAdjacent[0][0]++; break;
                 case -21: numAllyAdjacent[0][0]++; numAllyAdjacent[0][1]++; break;
@@ -54,7 +55,7 @@ public abstract class Robot extends Globals {
                 case 22: numAllyAdjacent[2][2]++; break;
             }
         }
-        // really cheap startup, takes around 300-600 bytecodes up to here
+        // relatively cheap startup, takes around <1000 bytecodes up to here even when cluttered
     }
 
     /**
