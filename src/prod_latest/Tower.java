@@ -4,6 +4,7 @@ import battlecode.common.*;
 
 public class Tower extends Robot {
 
+    public static SpawnStrategy spawnStrat;
     public static int unitsBuilt = 0;
 
     public static boolean tryBuildUnit(UnitType robotType) throws GameActionException {
@@ -21,23 +22,7 @@ public class Tower extends Robot {
     public static void playSpawnUnits() throws GameActionException {
         // demo of logger
         Logger.log("Units built: " + unitsBuilt);
-
-        if (unitsBuilt < 3) { // early game build soldier soldier mopper
-            if (unitsBuilt < 2) tryBuildUnit(UnitType.SOLDIER);
-            else tryBuildUnit(UnitType.MOPPER);
-        }
-        else if (rc.getChips() > 1300 && rc.getPaint() >= 300) { // can build any unit and still have chips left to make a tower
-            // pick random unit to build (with weights)
-            int soldierWeight = 20;
-            int splasherWeight = numTowers;
-            int mopperWeight = numTowers;
-            UnitType unitPicked = switch (randChoice(soldierWeight, splasherWeight, mopperWeight)) {
-                case 0 -> UnitType.SOLDIER;
-                case 1 -> UnitType.SPLASHER;
-                default -> UnitType.MOPPER;
-            };
-            tryBuildUnit(unitPicked);
-        }
+        spawnStrat.act();
     }
 
     public static void playAttack() throws GameActionException {
@@ -57,9 +42,84 @@ public class Tower extends Robot {
     @Override
     void play() throws GameActionException {
 
+        if (spawnStrat == null) {
+            switch (mapCategory) {
+                case SIZE1 -> spawnStrat = new Size1MapSpawnStrategy();
+                case SIZE2 -> spawnStrat = new Size2MapSpawnStrategy();
+                case SIZE3 -> spawnStrat = new Size3MapSpawnStrategy();
+            }
+        }
+
         playSpawnUnits();
         playAttack();
 
+    }
+
+    static abstract class SpawnStrategy extends Tower {
+        abstract public void act() throws GameActionException;
+    }
+
+    static class Size1MapSpawnStrategy extends SpawnStrategy {
+        public void act() throws GameActionException {
+            if (unitsBuilt < 3) { // early game build soldier soldier mopper
+                if (unitsBuilt < 2) tryBuildUnit(UnitType.SOLDIER);
+                else tryBuildUnit(UnitType.MOPPER);
+            }
+            else if (rc.getChips() > 1300 && rc.getPaint() >= 300) { // can build any unit and still have chips left to make a tower
+                // pick random unit to build (with weights)
+                int soldierWeight = 15;
+                int splasherWeight = 3 * numTowers;
+                int mopperWeight = 2 * numTowers;
+                UnitType unitPicked = switch (randChoice(soldierWeight, splasherWeight, mopperWeight)) {
+                    case 0 -> UnitType.SOLDIER;
+                    case 1 -> UnitType.SPLASHER;
+                    default -> UnitType.MOPPER;
+                };
+                tryBuildUnit(unitPicked);
+            }
+        }
+    }
+
+    static class Size2MapSpawnStrategy extends SpawnStrategy {
+        public void act() throws GameActionException {
+            if (unitsBuilt < 3) { // early game build soldier soldier mopper
+                if (unitsBuilt < 2) tryBuildUnit(UnitType.SOLDIER);
+                else tryBuildUnit(UnitType.MOPPER);
+            }
+            else if (rc.getChips() > 1300 && rc.getPaint() >= 300) { // can build any unit and still have chips left to make a tower
+                // pick random unit to build (with weights)
+                int soldierWeight = 16;
+                int splasherWeight = numTowers;
+                int mopperWeight = numTowers;
+                UnitType unitPicked = switch (randChoice(soldierWeight, splasherWeight, mopperWeight)) {
+                    case 0 -> UnitType.SOLDIER;
+                    case 1 -> UnitType.SPLASHER;
+                    default -> UnitType.MOPPER;
+                };
+                tryBuildUnit(unitPicked);
+            }
+        }
+    }
+
+    static class Size3MapSpawnStrategy extends SpawnStrategy {
+        public void act() throws GameActionException {
+            if (unitsBuilt < 3) { // early game build soldier soldier mopper
+                if (unitsBuilt < 2) tryBuildUnit(UnitType.SOLDIER);
+                else tryBuildUnit(UnitType.MOPPER);
+            }
+            else if (rc.getChips() > 1300 && rc.getPaint() >= 300) { // can build any unit and still have chips left to make a tower
+                // pick random unit to build (with weights)
+                int soldierWeight = 20;
+                int splasherWeight = numTowers;
+                int mopperWeight = numTowers;
+                UnitType unitPicked = switch (randChoice(soldierWeight, splasherWeight, mopperWeight)) {
+                    case 0 -> UnitType.SOLDIER;
+                    case 1 -> UnitType.SPLASHER;
+                    default -> UnitType.MOPPER;
+                };
+                tryBuildUnit(unitPicked);
+            }
+        }
     }
 
 }

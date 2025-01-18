@@ -45,6 +45,12 @@ public class Globals {
         Direction.SOUTHWEST,
         Direction.NORTHWEST,
     };
+
+    // not in game constants for some reason?
+    public static final int SOLDIER_ATTACK_COOLDOWN = 10;
+    public static final int SPLASHER_ATTACK_COOLDOWN = 10;
+    public static final int SOLDIER_ATTACK_COST = 5;
+    public static final int SPLASHER_ATTACK_COST = 50;
     
     public static boolean[][] paintTowerPattern;
     public static boolean[][] defenseTowerPattern;
@@ -60,6 +66,11 @@ public class Globals {
         }
         return boolArray;
     }
+
+    public static enum MapCategory {
+        SIZE1, SIZE2, SIZE3;
+    }
+    public static MapCategory mapCategory;
 
     public static void init(RobotController _rc) {
         rc = _rc;
@@ -81,6 +92,15 @@ public class Globals {
         defenseTowerPattern = patternToBooleanArray(GameConstants.DEFENSE_TOWER_PATTERN);
         moneyTowerPattern = patternToBooleanArray(GameConstants.MONEY_TOWER_PATTERN);
         resourcePattern = patternToBooleanArray(GameConstants.RESOURCE_PATTERN);
+
+        int mapArea = mapWidth * mapHeight;
+        if (mapArea < 900) {
+            Globals.mapCategory = MapCategory.SIZE1;
+        } else if (mapArea < 1600) {
+            Globals.mapCategory = MapCategory.SIZE2;
+        } else {
+            Globals.mapCategory = MapCategory.SIZE3;
+        }
     }
 
     /**
