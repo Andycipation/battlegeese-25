@@ -1,4 +1,4 @@
-package prod;
+package prod_v3_pre_sprint1;
 
 import battlecode.common.*;
 

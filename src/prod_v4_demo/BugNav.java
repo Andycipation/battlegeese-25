@@ -1,4 +1,4 @@
-package prod;
+package prod_v4_demo;
 
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;

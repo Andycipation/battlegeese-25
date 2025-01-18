@@ -1,4 +1,4 @@
-package template;
+package andrew;
 
 import battlecode.common.*;
 
@@ -15,9 +15,7 @@ public abstract class Robot extends Globals {
     /**
      * Preform main robot turn actions. This includes moving and attacking.
      */
-    void play() throws GameActionException {
-        
-    }
+    abstract void play() throws GameActionException;
 
     /**
      * Preform actions at the end of robot's turn. This can be used for cleanup

@@ -1,6 +1,6 @@
-package prod;
+package andrew;
 
-import battlecode.common.MapLocation;
+import battlecode.common.*;
 
 public class FastSet {
     private StringBuilder values = new StringBuilder();

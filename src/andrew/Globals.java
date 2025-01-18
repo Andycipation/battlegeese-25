@@ -1,4 +1,4 @@
-package template;
+package andrew;
 
 import java.util.Random;
 
@@ -9,7 +9,7 @@ public class Globals {
     public static RobotController rc;
     public static int id;
     
-    public static Random rng = new Random(1097);
+    public static Random rng;
 
     public static int mapWidth;
     public static int mapHeight;
@@ -34,9 +34,14 @@ public class Globals {
         Direction.NORTHWEST
     };
 
+    static MapLocation[] srpCenters = new MapLocation[1000];
+    static int numSrpCenters = 0;
+
     public static void init(RobotController _rc) {
         rc = _rc;
         id = rc.getID();
+
+        rng = new Random(id);
 
         mapWidth = rc.getMapWidth();
         mapHeight = rc.getMapHeight();
@@ -48,51 +53,24 @@ public class Globals {
 
         myTeam = rc.getTeam();
         opponentTeam =  myTeam.opponent();
-    }
 
-    public static double getPaintProportion() {
-        return (double)rc.getPaint() / (rc.getType().paintCapacity);
+        for (int x = 0; x < mapWidth; ++x) {
+            for (int y = 0; y < mapHeight; ++y) {
+                if ((x + y * 3) % 10 == 0) {
+                    srpCenters[numSrpCenters++] = new MapLocation(x, y);
+                }
+            }
+        }
+    }
+    
+    public static PaintType getDefaultColor(MapLocation loc) {
+        if ((loc.x + loc.y) % 2 == 0 && (loc.x + loc.y * 3) % 10 != 0) {
+            return PaintType.ALLY_SECONDARY;
+        }
+        return PaintType.ALLY_PRIMARY;
     }
 
     public static MapLocation randomMapLocation() {
         return new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
     }
-
-    /**
-     * Picks a random integer 0-1 with P[i] = wi / sum_i wi
-     */
-    public static int randChoice(int w1, int w2) {
-        return rng.nextInt(w1 + w2) < w1 ? 0 : 1;
-    }
-
-    /**
-     * Picks a random integer 0-2 with P[i] = wi / sum_i wi
-     */
-    public static int randChoice(int w1, int w2, int w3) {
-        int x = rng.nextInt(w1 + w2 + w3);
-        if (x < w1) return 0;
-        return x < w1 + w2 ? 1 : 2;
-    }
-
-    /**
-     * Picks a random integer 0-3 with P[i] = wi / sum_i wi
-     */
-    public static int randChoice(int w1, int w2, int w3, int w4) {
-        int x = rng.nextInt(w1 + w2 + w3 + w4);
-        if (x < w1) return 0;
-        if (x < w1 + w2) return 1;
-        return x < w1 + w2 + w3 ? 2 : 3;
-    }
-
-    /**
-     * Picks a random integer 0-4 with P[i] = wi / sum_i wi
-     */
-    public static int randChoice(int w1, int w2, int w3, int w4, int w5) {
-        int x = rng.nextInt(w1 + w2 + w3 + w4 + w5);
-        if (x < w1) return 0;
-        if (x < w1 + w2) return 1;
-        if (x < w1 + w2 + w3) return 2;
-        return x < w1 + w2 + w3 + w4 ? 3 : 4;
-    }
-    
 }

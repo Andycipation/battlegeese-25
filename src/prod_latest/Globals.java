@@ -1,4 +1,4 @@
-package template;
+package prod_latest;
 
 import java.util.Random;
 
@@ -9,7 +9,7 @@ public class Globals {
     public static RobotController rc;
     public static int id;
     
-    public static Random rng = new Random(1097);
+    public static Random rng;
 
     public static int mapWidth;
     public static int mapHeight;
@@ -33,10 +33,26 @@ public class Globals {
         Direction.SOUTHWEST,
         Direction.NORTHWEST
     };
+    
+    public static boolean[][] paintTowerPattern;
+    public static boolean[][] defenseTowerPattern;
+    public static boolean[][] moneyTowerPattern;
+    public static boolean[][] resourcePattern;
+
+    public static boolean[][] patternToBooleanArray(int pattern){
+        boolean[][] boolArray = new boolean[5][5];
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                boolArray[i][j] = (1 & (pattern >> (5 * i + j))) == 1;
+            }
+        }
+        return boolArray;
+    }
 
     public static void init(RobotController _rc) {
         rc = _rc;
         id = rc.getID();
+        rng = new Random(id);
 
         mapWidth = rc.getMapWidth();
         mapHeight = rc.getMapHeight();
@@ -48,14 +64,11 @@ public class Globals {
 
         myTeam = rc.getTeam();
         opponentTeam =  myTeam.opponent();
-    }
 
-    public static double getPaintProportion() {
-        return (double)rc.getPaint() / (rc.getType().paintCapacity);
-    }
-
-    public static MapLocation randomMapLocation() {
-        return new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
+        paintTowerPattern = patternToBooleanArray(GameConstants.PAINT_TOWER_PATTERN);
+        defenseTowerPattern = patternToBooleanArray(GameConstants.DEFENSE_TOWER_PATTERN);
+        moneyTowerPattern = patternToBooleanArray(GameConstants.MONEY_TOWER_PATTERN);
+        resourcePattern = patternToBooleanArray(GameConstants.RESOURCE_PATTERN);
     }
 
     /**

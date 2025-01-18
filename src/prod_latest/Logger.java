@@ -1,4 +1,4 @@
-package prod;
+package prod_latest;
 
 public class Logger extends Globals {
     private static StringBuilder sb = new StringBuilder();

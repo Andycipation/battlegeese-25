@@ -6,6 +6,7 @@ public class Tower extends Robot {
     
     @Override
     void play() throws GameActionException {
+        
     }
 
 }

@@ -1,4 +1,4 @@
-package prod;
+package prod_v3_pre_sprint1;
 
 import battlecode.common.*;
 
@@ -53,6 +53,10 @@ public class Globals {
 
     public static double getPaintProportion() {
         return (double)rc.getPaint() / (rc.getType().paintCapacity);
+    }
+
+    public static MapLocation randomMapLocation() {
+        return new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
     }
     
 }
