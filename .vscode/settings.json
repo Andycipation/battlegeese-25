@@ -1,7 +1,7 @@
 {
   "[java]": {
     "editor.tabSize": 4,
-    "editor.defaultFormatter": null
+    "editor.defaultFormatter": "Oracle.oracle-java"
   },
   "jdk.java.onSave.organizeImports": false,
   "[python]": {
@@ -9,5 +9,6 @@
     "editor.wordBasedSuggestions": "off",
     "editor.tabSize": 4,
   },
-  "python.analysis.autoImportCompletions": true
+  "python.analysis.autoImportCompletions": true,
+  "java.configuration.updateBuildConfiguration": "disabled"
 }
