@@ -1,5 +1,7 @@
 package prod_latest;
 
+import java.lang.annotation.Target;
+
 import battlecode.common.*;
 
 public class Soldier extends Unit {
@@ -308,6 +310,9 @@ public class Soldier extends Unit {
         }
     }
 
+
+
+
     static class KitingStrategy extends SoldierStrategy {
 
         public static MapLocation outRangeLoc;
@@ -319,6 +324,14 @@ public class Soldier extends Unit {
             outRangeLoc = _outRangeLoc;
             inRangeLoc = _inRangeLoc;
             target = _target;
+        }
+
+        public void moveToSpot() throws GameActionException {
+
+        }
+
+        public void Kiting() throws GameActionException {
+            
         }
 
         @Override
@@ -428,6 +441,8 @@ public class Soldier extends Unit {
 
     }
 
+    // Run away from tower we were attacking if health is low
+    // Badarded rn, literally just skaddadle in the opposite direction
     static class RunAwayStrategy extends SoldierStrategy {
         MapLocation target;
         int turns;
@@ -454,4 +469,66 @@ public class Soldier extends Unit {
             return "Run away " + target + " " + turns + " " + target.directionTo(rc.getLocation());
         }
     }
+
+    static class TrollingStrategy extends SoldierStrategy {
+        MapLocation target;
+        MapLocation[] trolledLocs = new MapLocation[5];
+        int trolledLocIdx = 0;
+
+        boolean trolledBefore(MapLocation loc) {
+            for (MapLocation trolledLoc : trolledLocs) {
+                if (trolledLoc != null && trolledLoc.equals(loc)) return true;
+            }
+            return false;
+        }
+
+        TrollingStrategy(MapLocation _target) {
+            rc.setTimelineMarker("Trolling begins!", 0, 0, 255);
+            target = _target;
+        }
+
+        public void act() throws GameActionException {
+            MapLocation curLoc = rc.getLocation();
+
+            if (curLoc.equals(target)) {
+                yieldStrategy();
+                return ;
+            }
+
+            MapLocation ruinLoc = null;
+            for (int i = nearbyMapInfos.length; --i >= 0;) {
+                MapInfo tile = nearbyMapInfos[i];
+                MapLocation loc = tile.getMapLocation();
+                RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
+                if (tile.hasRuin() && robotInfo == null && !trolledBefore(loc)) {
+                    ruinLoc = loc;
+                    break; 
+                }
+            }
+
+
+            if (ruinLoc != null) {
+                for (int i = nearbyMapInfos.length; --i >= 0;) {
+                    MapInfo tile = nearbyMapInfos[i];
+                    MapLocation loc = tile.getMapLocation();
+                    int adx = Math.abs(loc.x - ruinLoc.x);
+                    int ady = Math.abs(loc.y - ruinLoc.y);
+                    if (adx <= 2 && ady <= 2 && loc.isWithinDistanceSquared(curLoc, actionRadiusSquared) && tile.getPaint() == PaintType.EMPTY) {
+                        if (tryPaint(loc, getSrpPaintColor(loc))) {
+                            trolledLocs[trolledLocIdx] = ruinLoc;
+                            trolledLocIdx = (trolledLocIdx + 1) % trolledLocs.length;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            BugNav.moveToward(target);
+        }
+
+        public String toString() {
+            return "Trolling " + target + " " + trolledLocs[trolledLocIdx];
+        }
+    }
+
 }

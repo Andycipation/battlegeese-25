@@ -166,4 +166,50 @@ public class Globals {
             return diagonalDirections[(idx + 2)%4];
         }
     }
+
+    public static MapLocation invertLoc(MapLocation loc) {
+        return loc.translate(mapWidth-loc.x*2 + 1, mapHeight-loc.y*2+1);
+    }
+
+    public static MapLocation[] sorted(MapLocation curLoc, MapLocation[] locs) {
+        int n = locs.length;
+    
+        MapLocation[] d0 = new MapLocation[1];
+        MapLocation[] d1 = new MapLocation[8];
+        MapLocation[] d2 = new MapLocation[16];
+        MapLocation[] d3 = new MapLocation[24];
+        MapLocation[] d4 = new MapLocation[32];
+        MapLocation[] sortedLocs = new MapLocation[n];
+
+        int idx0 = 0, idx1 = 0, idx2 = 0, idx3 = 0, idx4 = 0;
+    
+        for (int i = 0; i < n; i++) {
+            int dist = locs[i].distanceSquaredTo(curLoc);
+            if (dist <= 1) {
+                d0[idx0++] = locs[i];
+            } else if (dist <= 8) {
+                d1[idx1++] = locs[i];
+            } else if (dist <= 16) {
+                d2[idx2++] = locs[i];
+            } else if (dist <= 24) {
+                d3[idx3++] = locs[i];
+            } else if (dist <= 32) {
+                d4[idx4++] = locs[i];
+            }
+        }
+    
+        int pos = 0;
+        System.arraycopy(d0, 0, sortedLocs, pos, idx0);
+        pos += idx0;
+        System.arraycopy(d1, 0, sortedLocs, pos, idx1);
+        pos += idx1;
+        System.arraycopy(d2, 0, sortedLocs, pos, idx2);
+        pos += idx2;
+        System.arraycopy(d3, 0, sortedLocs, pos, idx3);
+        pos += idx3;
+        System.arraycopy(d4, 0, sortedLocs, pos, idx4);
+    
+        return sortedLocs;
+    }
+    
 }
