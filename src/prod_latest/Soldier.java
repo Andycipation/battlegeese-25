@@ -28,9 +28,6 @@ public class Soldier extends Unit {
         return false;
     }
 
-    public static boolean isEnemyTower(RobotInfo robotInfo) {
-        return robotInfo.getType().isTowerType() && robotInfo.getTeam() == rc.getTeam().opponent();
-    }
 
     public static boolean withinPattern(MapLocation center, MapLocation loc) {
         return Math.abs(center.x - loc.x) <= 2 && Math.abs(center.y - loc.y) <= 2;
@@ -326,11 +323,38 @@ public class Soldier extends Unit {
 
         @Override
         public void act() throws GameActionException {
-            // check if target is still alive
-            RobotInfo robotInfo = rc.senseRobotAtLocation(target);
-            if (robotInfo == null) {
-                yieldStrategy();
-                return;
+            // sometimes bugnav moves me out of bounds
+            // we want to check if we're within sensible distance of target
+            if (rc.getLocation().isWithinDistanceSquared(target, 20)) {
+                // check if target is still alive
+                RobotInfo robotInfo = rc.senseRobotAtLocation(target);
+                if (robotInfo == null) {
+                    yieldStrategy();
+                    return;
+                }
+
+                int myHealth = rc.getHealth();
+                // consider running away if we're low on health and we're on the outRangeLoc
+                if (myHealth < 100 && (turnsMoved & 1) == 1) {
+                    int damageReceive = robotInfo.getType().attackStrength;
+                    int damageDealt = rc.getType().attackStrength;
+                    int enemyHealth = robotInfo.getHealth();
+                    int turnsToDeath = (myHealth/damageReceive + ((myHealth%damageReceive) & 1)) * 2;
+                    int turnsToKill = enemyHealth/damageDealt + ((myHealth%damageReceive) & 1);
+                    
+                    boolean runAway = false;
+                    // if we can kill them, we stay 
+                    if (turnsToKill > turnsToDeath) {
+                        runAway = true;
+                    } else if (turnsToKill == turnsToDeath && rc.getID() > robotInfo.getID()) {
+                        runAway = true;
+                    }
+                    // otherwise skaddadle
+                    if (runAway) {
+                        switchStrategy(new RunAwayStrategy(target, 4));
+                        return;
+                    }
+                }
             }
 
             if ((turnsMoved & 1) == 0) {
@@ -402,5 +426,32 @@ public class Soldier extends Unit {
             }
         }
 
+    }
+
+    static class RunAwayStrategy extends SoldierStrategy {
+        MapLocation target;
+        int turns;
+        RunAwayStrategy(MapLocation _target, int _turns) {
+            // rc.setTimelineMarker("running away", 0, 255, 0);
+            target = _target;
+            turns = _turns;
+        }
+
+        // just move in the opposite direction lol
+        public void act() throws GameActionException {
+            if (turns == 0) {
+                yieldStrategy();
+                return ;
+            }
+            Direction dir = target.directionTo(rc.getLocation());
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+            }
+            turns--;
+        }
+
+        public String toString() {
+            return "Run away " + target + " " + turns + " " + target.directionTo(rc.getLocation());
+        }
     }
 }

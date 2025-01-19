@@ -150,4 +150,20 @@ public class Globals {
     public static boolean isAllyPaintTower(RobotInfo info) {
         return isPaintTower(info.type) && info.team.equals(myTeam);
     }
+
+    public static boolean isEnemyTower(RobotInfo robotInfo) {
+        return robotInfo.getType().isTowerType() && robotInfo.getTeam() == rc.getTeam().opponent();
+    }
+
+    public static Direction invertDir(Direction dir) {
+        int idx = dir.ordinal();
+        // cardinal dir
+        if (idx < 4) {
+            return cardinalDirections[(idx + 2)%4];
+        // diagional dir
+        } else {
+            idx -= 4; 
+            return diagonalDirections[(idx + 2)%4];
+        }
+    }
 }
