@@ -16,7 +16,10 @@ public class Soldier extends Robot {
             return paintTower;
         }
         if (wanderTarget == null) {
-            // var curLoc = rc.getLocation();
+            wanderTarget = new MapLocation(rng.nextInt(0, mapWidth), rng.nextInt(0, mapHeight));
+        }
+        var curLoc = rc.getLocation();
+        if (wanderTarget == curLoc) {
             wanderTarget = new MapLocation(rng.nextInt(0, mapWidth), rng.nextInt(0, mapHeight));
         }
         return wanderTarget;
@@ -41,17 +44,29 @@ public class Soldier extends Robot {
 
         // Movement
         var dir = Movement.getMove(targetLoc);
+        var endLoc = (dir != null && rc.canMove(dir) ? curLoc.add(dir) : curLoc);
         if (dir != null) {
             Movement.tryMove(dir);
             Logger.flush();
         }
         // After calling rc.move, the `rc.getLocation` does not change; it seems like all actions
         // are flushed when Clock.yield() is called.
-        var endLoc = (dir != null && rc.canMove(dir) ? curLoc.add(dir) : curLoc);
-        if (rc.canPaint(endLoc)) {
-            rc.attack(endLoc);
+        
+        boolean paintedInFront = tryAttack(endLoc);
+        if (paintedInFront) {
+            var mapInfos = rc.senseNearbyMapInfos();
+            for (var tile : mapInfos) {
+                var loc = tile.getMapLocation();
+                tryAttack(loc);
+            }
         }
-        // if (endLoc)
     }
     
+    boolean tryAttack(MapLocation loc) throws GameActionException {
+        if (rc.canPaint(loc) && rc.canAttack(loc) && !rc.senseMapInfo(loc).getPaint().isAlly()) {
+            rc.attack(loc);
+            return true;
+        }
+        return false;
+    }
 }
