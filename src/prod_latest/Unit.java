@@ -3,14 +3,20 @@ package prod_latest;
 import battlecode.common.*;
 
 public abstract class Unit extends Robot {
-    
+    static MapLocation paintTowerLoc;
+
     /**
      * Preform actions at the beginning of the robot's turn.
      * Here we can record new information, update robot state, etc...
      */
     void initTurn() throws GameActionException {
         super.initTurn();
-
+        var infos = rc.senseNearbyRobots();
+        for (var info : infos) {
+            if (Globals.isPaintTower(info.type) && info.team == Globals.myTeam) {
+                paintTowerLoc = info.location;
+            }
+        }
     }
 
     /**
@@ -27,6 +33,5 @@ public abstract class Unit extends Robot {
      */
     void endTurn() throws GameActionException {
         super.initTurn();
-
     }
 }

@@ -1,7 +1,7 @@
 {
   "[java]": {
     "editor.tabSize": 4,
-    "editor.defaultFormatter": "Oracle.oracle-java"
+    "editor.defaultFormatter": null,
   },
   "jdk.java.onSave.organizeImports": false,
   "[python]": {

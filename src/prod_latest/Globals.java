@@ -8,7 +8,7 @@ public class Globals {
 
     public static RobotController rc;
     public static int id;
-    
+
     public static Random rng;
 
     public static int mapWidth;
@@ -51,13 +51,13 @@ public class Globals {
     public static final int SPLASHER_ATTACK_COOLDOWN = 10;
     public static final int SOLDIER_ATTACK_COST = 5;
     public static final int SPLASHER_ATTACK_COST = 50;
-    
+
     public static boolean[][] paintTowerPattern;
     public static boolean[][] defenseTowerPattern;
     public static boolean[][] moneyTowerPattern;
     public static boolean[][] resourcePattern;
 
-    public static boolean[][] patternToBooleanArray(int pattern){
+    public static boolean[][] patternToBooleanArray(int pattern) {
         boolean[][] boolArray = new boolean[5][5];
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
@@ -86,7 +86,7 @@ public class Globals {
         visionRadiusSquared = GameConstants.VISION_RADIUS_SQUARED;
 
         myTeam = rc.getTeam();
-        opponentTeam =  myTeam.opponent();
+        opponentTeam = myTeam.opponent();
 
         paintTowerPattern = patternToBooleanArray(GameConstants.PAINT_TOWER_PATTERN);
         defenseTowerPattern = patternToBooleanArray(GameConstants.DEFENSE_TOWER_PATTERN);
@@ -139,5 +139,11 @@ public class Globals {
         if (x < w1 + w2 + w3) return 2;
         return x < w1 + w2 + w3 + w4 ? 3 : 4;
     }
-    
+
+    /**
+     * Returns whether the given type is the type of a paint tower.
+     */
+    public static boolean isPaintTower(UnitType type) {
+        return type == UnitType.LEVEL_ONE_PAINT_TOWER || type == UnitType.LEVEL_TWO_PAINT_TOWER || type == UnitType.LEVEL_THREE_PAINT_TOWER;
+    }
 }

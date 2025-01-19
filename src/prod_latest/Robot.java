@@ -71,7 +71,6 @@ public abstract class Robot extends Globals {
      * span across several turns.
      */
     void endTurn() throws GameActionException {
-
     }
     
 }
