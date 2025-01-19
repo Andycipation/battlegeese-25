@@ -13,7 +13,7 @@ public abstract class Unit extends Robot {
         super.initTurn();
         var infos = rc.senseNearbyRobots();
         for (var info : infos) {
-            if (Globals.isPaintTower(info.type) && info.team == Globals.myTeam) {
+            if (Globals.isAllyPaintTower(info)) {
                 paintTowerLoc = info.location;
             }
         }

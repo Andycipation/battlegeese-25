@@ -104,10 +104,8 @@ public class Soldier extends Unit {
             int moneyTowerWeight = 8;
             int paintTowerWeight = numTowers;
             towerType = switch (randChoice(moneyTowerWeight, paintTowerWeight)) {
-                case 0 ->
-                    UnitType.LEVEL_ONE_MONEY_TOWER;
-                default ->
-                    UnitType.LEVEL_ONE_PAINT_TOWER;
+                case 0 -> UnitType.LEVEL_ONE_MONEY_TOWER;
+                default -> UnitType.LEVEL_ONE_PAINT_TOWER;
             };
         }
 
@@ -140,12 +138,9 @@ public class Soldier extends Unit {
                 MapLocation loc = ruinLoc.add(Direction.NORTH);
                 if (rc.canSenseLocation(loc)) {
                     PaintType toMark = switch (towerType) {
-                        case UnitType.LEVEL_ONE_PAINT_TOWER ->
-                            PaintType.ALLY_PRIMARY;
-                        case UnitType.LEVEL_ONE_MONEY_TOWER ->
-                            PaintType.ALLY_SECONDARY;
-                        default ->
-                            PaintType.ALLY_PRIMARY;
+                        case UnitType.LEVEL_ONE_PAINT_TOWER -> PaintType.ALLY_PRIMARY;
+                        case UnitType.LEVEL_ONE_MONEY_TOWER -> PaintType.ALLY_SECONDARY;
+                        default -> PaintType.ALLY_PRIMARY;
                     };
                     if (rc.senseMapInfo(loc).getMark() != toMark && rc.canMark(loc)) {
                         rc.mark(loc, toMark == PaintType.ALLY_SECONDARY);
@@ -257,7 +252,7 @@ public class Soldier extends Unit {
             }
 
             // Kiting!
-            // TODO: combine this into a single for loop, need too loop in max.
+            // TODO: combine this into a single for loop, need to loop in max.
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 MapInfo tile = nearbyMapInfos[i];
                 MapLocation loc = tile.getMapLocation();
@@ -367,15 +362,39 @@ public class Soldier extends Unit {
                 yieldStrategy();
                 return;
             }
-            BugNav.moveToward(paintTowerLoc);
-            if (rc.canSenseRobotAtLocation(paintTowerLoc)) {
-                var paintTowerInfo = rc.senseRobotAtLocation(paintTowerLoc);
-                if (!Globals.isPaintTower(paintTowerInfo.type)) {
-                    paintTowerLoc = null;
-                    yieldStrategy();
-                    return;
-                }
-                var spaceToFill = Globals.paintCapacity - rc.getPaint();
+            var dir = BugNav.getDirectionToMove(paintTowerLoc);
+            if (dir == null) {
+                // We have no valid moves!
+                return;
+            }
+
+            if (!rc.canSenseRobotAtLocation(paintTowerLoc)) {
+                // We're still very far, just move closer
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                return;
+            }
+
+            var paintTowerInfo = rc.senseRobotAtLocation(paintTowerLoc);
+            if (!Globals.isAllyPaintTower(paintTowerInfo)) {
+                System.out.println("Our paint tower got destroyed and changed to something else!");
+                paintTowerLoc = null;
+                yieldStrategy();
+                return;
+            }
+
+            // If we wouldn't start incurring penalty from the tower, move closer
+            var nextLoc = rc.getLocation().add(dir);
+            if (nextLoc.distanceSquaredTo(paintTowerLoc) > GameConstants.PAINT_TRANSFER_RADIUS_SQUARED) {
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                return;
+            }
+
+            var spaceToFill = Globals.paintCapacity - rc.getPaint();
+            if (paintTowerInfo.getPaintAmount() >= spaceToFill) {
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
                 if (rc.canTransferPaint(paintTowerLoc, -spaceToFill)) {
                     rc.transferPaint(paintTowerLoc, -spaceToFill);
                     yieldStrategy();

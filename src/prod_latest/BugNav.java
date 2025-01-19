@@ -1,8 +1,6 @@
 package prod_latest;
 
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
+import battlecode.common.*;
 
 public class BugNav extends Globals {
     private static MapLocation currentTarget;
@@ -12,26 +10,55 @@ public class BugNav extends Globals {
     private static MapLocation currentObstacle;
     private static FastSet visitedStates;
 
-    public static void moveToward(MapLocation target) throws GameActionException {
+    private static boolean isStuck() {
+        for (int i = adjacentDirections.length; --i >= 0; ) {
+            if (rc.canMove(adjacentDirections[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static Direction followWall(boolean canRotate) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(currentObstacle);
+
+        for (int i = 8; --i >= 0; ) {
+            dir = obstacleOnRight ? dir.rotateLeft() : dir.rotateRight();
+            if (rc.canMove(dir)) {
+                return dir;
+            }
+
+            MapLocation location = rc.adjacentLocation(dir);
+            if (canRotate && !rc.onTheMap(location)) {
+                obstacleOnRight = !obstacleOnRight;
+                return followWall(false);
+            }
+
+            if (rc.onTheMap(location) && !rc.sensePassability(location)) {
+                currentObstacle = location;
+            }
+        }
+
+        // Should never get here, because we checked that the robot is not stuck
+        // assert(false);
+        return null;
+    }
+
+    public static Direction getDirectionToMove(MapLocation target) throws GameActionException {
+        // Returns the direction to move to get closer to `target`. The returned direction is
+        // guaranteed to be passable, i.e. rc.move(dir) will never throw.
+        // Returns null if there is no adjacent direction that is passable.
         if (currentTarget == null || !currentTarget.equals(target)) {
             reset();
         }
 
-        boolean hasOptions = false;
-        for (int i = adjacentDirections.length; --i >= 0; ) {
-            if (canMove(adjacentDirections[i])) {
-                hasOptions = true;
-                break;
-            }
-        }
-
-        if (!hasOptions) {
-            return;
+        if (isStuck()) {
+            return null;
         }
 
         MapLocation myLocation = rc.getLocation();
 
-        int distanceToTarget = distance1d(myLocation, target);
+        int distanceToTarget = chebyshevDist(myLocation, target);
         if (distanceToTarget < minDistanceToTarget) {
             reset();
             minDistanceToTarget = distanceToTarget;
@@ -49,15 +76,23 @@ public class BugNav extends Globals {
 
         if (currentObstacle == null) {
             Direction forward = myLocation.directionTo(target);
-            if (canMove(forward)) {
-                move(forward);
-                return;
+            if (rc.canMove(forward)) {
+                return forward;
             }
-
             setInitialDirection();
         }
 
-        followWall(true);
+        return followWall(true);
+    }
+
+    public static boolean moveToward(MapLocation target) throws GameActionException {
+        var dir = getDirectionToMove(target);
+        if (dir != null) {
+            assert(rc.canMove(dir));
+            rc.move(dir);
+            return true;
+        }
+        return false;
     }
 
     public static void reset() {
@@ -78,7 +113,6 @@ public class BugNav extends Globals {
             if (rc.onTheMap(location) && rc.sensePassability(location)) {
                 break;
             }
-
             left = left.rotateLeft();
         }
 
@@ -88,15 +122,14 @@ public class BugNav extends Globals {
             if (rc.onTheMap(location) && rc.sensePassability(location)) {
                 break;
             }
-
             right = right.rotateRight();
         }
 
         MapLocation leftLocation = rc.adjacentLocation(left);
         MapLocation rightLocation = rc.adjacentLocation(right);
 
-        int leftDistance = distance1d(leftLocation, currentTarget);
-        int rightDistance = distance1d(rightLocation, currentTarget);
+        int leftDistance = chebyshevDist(leftLocation, currentTarget);
+        int rightDistance = chebyshevDist(rightLocation, currentTarget);
 
         if (leftDistance < rightDistance) {
             obstacleOnRight = true;
@@ -113,29 +146,6 @@ public class BugNav extends Globals {
         }
     }
 
-    private static void followWall(boolean canRotate) throws GameActionException {
-        Direction direction = rc.getLocation().directionTo(currentObstacle);
-
-        for (int i = 8; --i >= 0; ) {
-            direction = obstacleOnRight ? direction.rotateLeft() : direction.rotateRight();
-            if (canMove(direction)) {
-                move(direction);
-                return;
-            }
-
-            MapLocation location = rc.adjacentLocation(direction);
-            if (canRotate && !rc.onTheMap(location)) {
-                obstacleOnRight = !obstacleOnRight;
-                followWall(false);
-                return;
-            }
-
-            if (rc.onTheMap(location) && !rc.sensePassability(location)) {
-                currentObstacle = location;
-            }
-        }
-    }
-
     private static char getState(MapLocation target) {
         MapLocation myLocation = rc.getLocation();
         Direction direction = myLocation.directionTo(currentObstacle != null ? currentObstacle : target);
@@ -144,17 +154,7 @@ public class BugNav extends Globals {
         return (char) ((((myLocation.x << 6) | myLocation.y) << 4) | (direction.ordinal() << 1) | rotation);
     }
 
-    private static int distance1d(MapLocation a, MapLocation b) {
+    private static int chebyshevDist(MapLocation a, MapLocation b) {
         return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
-    }
-
-    private static boolean canMove(Direction direction) {
-        return rc.canMove(direction);
-    }
-
-    private static void move(Direction direction) throws GameActionException {
-        if (rc.canMove(direction)) {
-            rc.move(direction);
-        }
     }
 }
