@@ -113,7 +113,7 @@ public class Soldier extends Unit {
 
         @Override
         public void act() throws GameActionException {
-            if (ruinLoc == null || !rc.canSenseLocation(ruinLoc) || rc.senseRobotAtLocation(ruinLoc) != null) { // no ruin found or ruin is completed
+            if (ruinLoc == null || !rc.canSenseLocation(ruinLoc) || rc.senseRobotAtLocation(ruinLoc) != null || rc.getNumberTowers() == 25) { // no ruin found or ruin is completed
                 yieldStrategy();
                 return;
             }
@@ -242,7 +242,7 @@ public class Soldier extends Unit {
 
         @Override
         public void act() throws GameActionException {
-            if (targetRuinCooldown <= 0) {
+            if (rc.getNumberTowers() < 25 && targetRuinCooldown <= 0) {
                 for (int i = nearbyMapInfos.length; --i >= 0;) {
                     MapInfo tile = nearbyMapInfos[i];
                     MapLocation loc = tile.getMapLocation();
