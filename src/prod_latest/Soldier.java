@@ -257,8 +257,8 @@ public class Soldier extends Unit {
                 MapLocation loc = tile.getMapLocation();
                 RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
                 if (prevLoc != null && !prevLoc.isWithinDistanceSquared(loc, actionRadiusSquared)
-                        && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo)) {
-                    //    rc.setTimelineMarker("Kiting time!", 0, 255, 0);
+                        && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo) && curLoc.distanceSquaredTo(prevLoc) < 4) {
+                       rc.setTimelineMarker("Kiting time!", 0, 255, 0);
                     switchStrategy(new KitingStrategy(prevLoc, curLoc, loc));
                     return;
                 }
@@ -310,9 +310,6 @@ public class Soldier extends Unit {
         }
     }
 
-
-
-
     static class KitingStrategy extends SoldierStrategy {
 
         public static MapLocation outRangeLoc;
@@ -324,14 +321,6 @@ public class Soldier extends Unit {
             outRangeLoc = _outRangeLoc;
             inRangeLoc = _inRangeLoc;
             target = _target;
-        }
-
-        public void moveToSpot() throws GameActionException {
-
-        }
-
-        public void Kiting() throws GameActionException {
-            
         }
 
         @Override
