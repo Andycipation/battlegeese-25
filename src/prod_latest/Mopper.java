@@ -1,7 +1,5 @@
 package prod_latest;
 
-import com.sun.java.accessibility.util.TopLevelWindowListener;
-
 import battlecode.common.*;
 
 public class Mopper extends Unit {
@@ -114,13 +112,13 @@ public class Mopper extends Unit {
                 return;
             }
 
-            if(!curLoc.isAdjacentTo(ruinLoc)) {
+            if(!locBeforeTurn.isAdjacentTo(ruinLoc)) {
                 BugNav.moveToward(ruinLoc);
                 mop_nearby();
             }
             else {
                 // walk around tower every turn
-                Direction dir = curLoc.directionTo(ruinLoc).rotateLeft();
+                Direction dir = locBeforeTurn.directionTo(ruinLoc).rotateLeft();
                 if(rc.canMove(dir)) {
                     rc.move(dir);
                 }
