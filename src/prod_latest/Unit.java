@@ -71,13 +71,6 @@ public abstract class Unit extends Robot {
             }
         }
 
-        if (informedEnemyPaintLoc != null) {
-            rc.setIndicatorLine(locBeforeTurn, informedEnemyPaintLoc, 255, 150, 150);
-        }
-        if (informedEmptyPaintLoc != null) {
-            // rc.setIndicatorLine(locBeforeTurn, informedEmptyPaintLoc, 150, 150, 255);
-        }
-
     }
 
     /**
@@ -123,6 +116,13 @@ public abstract class Unit extends Robot {
                 Comms.encodeMapLocation(informLoc)
             });
             rc.sendMessage(msgRecipient, msg);
+        }
+
+        if (informedEnemyPaintLoc != null) {
+            rc.setIndicatorLine(locBeforeTurn, informedEnemyPaintLoc, 255, 150, 150);
+        }
+        if (informedEmptyPaintLoc != null) {
+            // rc.setIndicatorLine(locBeforeTurn, informedEmptyPaintLoc, 150, 150, 255);
         }
     }
 
