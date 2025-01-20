@@ -230,6 +230,14 @@ public class Soldier extends Unit {
 
         @Override
         public void act() throws GameActionException {
+            for (RobotInfo robotInfo : nearbyAllyRobots) {
+                if (robotInfo.type.canUpgradeType()) {
+                    if (rc.canUpgradeTower(robotInfo.location)) {
+                        rc.upgradeTower(robotInfo.location);
+                    }
+                }
+            }
+
             if (rc.getNumberTowers() < 25 && targetRuinCooldown <= 0) {
                 for (int i = nearbyMapInfos.length; --i >= 0;) {
                     MapInfo tile = nearbyMapInfos[i];
