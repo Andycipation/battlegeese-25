@@ -7,12 +7,37 @@ public abstract class Robot extends Globals {
     public static MapInfo[] nearbyMapInfos;
     public static RobotInfo[] nearbyAllyRobots;
     public static RobotInfo[] nearbyEnemyRobots;
-    public static MapLocation curLoc;
+    public static MapLocation locBeforeTurn;
     public static int numTowers;
     public static int roundNum;
     Message[] lastRoundMessages;
     // numAllyAdjacent is indexed by the same was as Direction.getDirectionOrderNum
-    public static int numAllyAdjacent[];
+    public static int[] numAllyAdjacent;
+
+    public static final int CHIP_AGGREGATION_WINDOW = 50;
+    public static int[] chipCountQueue;
+
+    public static double getProgress() {
+        double estimatedRuins = 0.02 * mapHeight * mapWidth;
+        return Math.min(numTowers / (0.6 * estimatedRuins), 1.0);
+        // long sumX = 0, sumX2 = 0;
+        // int cnt = 0;
+        // for (long x : chipCountQueue) {
+        //     if (x != -1) {
+        //         sumX += x;
+        //         sumX2 += x * x;
+        //         cnt += 1;
+        //     }
+        // }
+        // if (cnt < CHIP_AGGREGATION_WINDOW) {
+        //     return -1;
+        // }
+        // double EX2 = 1.0 * sumX2 / cnt;
+        // double EX = 1.0 * sumX / cnt;
+        // double std = Math.sqrt(EX2 - EX * EX);
+        // System.out.println("" + EX + " " + std);
+        // return EX / std;
+    }
 
     /**
      * Preform actions at the beginning of the robot's turn.
@@ -22,13 +47,13 @@ public abstract class Robot extends Globals {
         nearbyMapInfos = rc.senseNearbyMapInfos();
         nearbyAllyRobots = rc.senseNearbyRobots(-1, myTeam);
         nearbyEnemyRobots = rc.senseNearbyRobots(-1, opponentTeam);
-        curLoc = rc.getLocation();
+        locBeforeTurn = rc.getLocation();
         numTowers = rc.getNumberTowers();
         roundNum = rc.getRoundNum();
         numAllyAdjacent = new int[9];
         lastRoundMessages = rc.readMessages(roundNum - 1);
         for (int i = nearbyAllyRobots.length; --i >= 0;) {
-            MapLocation diff = nearbyAllyRobots[i].getLocation().translate(-curLoc.x, -curLoc.y);
+            MapLocation diff = nearbyAllyRobots[i].getLocation().translate(-locBeforeTurn.x, -locBeforeTurn.y);
             switch (diff.x * 10 + diff.y) {
                 case -22: numAllyAdjacent[8]++; break;
                 case -21: numAllyAdjacent[8]++; numAllyAdjacent[1]++; break;
@@ -58,6 +83,18 @@ public abstract class Robot extends Globals {
             }
         }
         // relatively cheap startup, takes around <1000 bytecodes up to here even when cluttered
+
+        // TODO: this can be optimized a lot, e.g. with a ring-like queue
+        if (chipCountQueue == null) {
+            chipCountQueue = new int[CHIP_AGGREGATION_WINDOW];
+            for (int i = CHIP_AGGREGATION_WINDOW; --i >= 0;) {
+                chipCountQueue[i] = -1;
+            }
+        }
+        for (int i = CHIP_AGGREGATION_WINDOW; --i > 0;) {
+            chipCountQueue[i] = chipCountQueue[i - 1];
+        }
+        chipCountQueue[0] = rc.getChips();
     }
 
     /**

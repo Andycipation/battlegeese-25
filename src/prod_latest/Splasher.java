@@ -57,7 +57,7 @@ public class Splasher extends Unit {
                 yieldStrategy();
                 return;
             }
-            if (!nextTarget.isAdjacentTo(curLoc)) {
+            if (!nextTarget.isAdjacentTo(locBeforeTurn)) {
                 BugNav.moveToward(nextTarget);
             }
             
@@ -91,7 +91,7 @@ public class Splasher extends Unit {
             }
     
             BugNav.moveToward(target);
-            if (rc.getLocation() == curLoc) {
+            if (rc.getLocation() == locBeforeTurn) {
                 turnsNotMoved++;
                 if (turnsNotMoved >= 3) {
                     yieldStrategy();

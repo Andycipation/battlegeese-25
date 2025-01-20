@@ -1,5 +1,7 @@
 package prod_latest;
 
+import com.sun.java.accessibility.util.TopLevelWindowListener;
+
 import battlecode.common.*;
 
 public class Mopper extends Unit {
@@ -68,10 +70,71 @@ public class Mopper extends Unit {
             BugNav.moveToward(nextTarget);
         }
 
-        public String toStrign() {
+        public String toString() {
             return "Aggro";
         }
     
+    }
+
+    static class MopRuinStrategy extends MopperStrategy {
+
+        public static MapLocation ruinLoc;
+        public static int turnsWithNothingToMop;
+
+        MopRuinStrategy(MapLocation _ruinloc) {
+            ruinLoc = _ruinloc;
+            turnsWithNothingToMop = 0;
+        }
+
+
+        // Assumes robot is spinning around ruin and returns true if there is something adjacent to mop
+        public boolean mop_nearby() throws GameActionException {
+            boolean ret = false;
+
+            MapInfo[] actionableMapInfos = rc.senseNearbyMapInfos(rc.getLocation(), actionRadiusSquared);
+            for(int i = actionableMapInfos.length; --i >= 0;) {
+                MapInfo tile = actionableMapInfos[i];
+                MapLocation loc = tile.getMapLocation();
+                if(withinPattern(ruinLoc, loc) && tile.getPaint().isEnemy()) {
+                    ret = true;
+                    if(rc.canAttack(loc)) {
+                        rc.attack(loc);
+                        return ret;
+                    }
+                }
+            }
+
+            return ret;
+        }
+
+        @Override
+        public void act() throws GameActionException {
+            if(ruinLoc == null || !rc.canSenseLocation(ruinLoc)) {
+                yieldStrategy();
+                return;
+            }
+
+            if(!curLoc.isAdjacentTo(ruinLoc)) {
+                BugNav.moveToward(ruinLoc);
+                mop_nearby();
+            }
+            else {
+                // walk around tower every turn
+                Direction dir = curLoc.directionTo(ruinLoc).rotateLeft();
+                if(rc.canMove(dir)) {
+                    rc.move(dir);
+                }
+
+                if(!mop_nearby()) {
+                    turnsWithNothingToMop++;
+                }
+            }
+
+            if(turnsWithNothingToMop >= 4) {
+                yieldStrategy();
+                return;
+            }
+        }
     }
     
     /**
@@ -101,6 +164,10 @@ public class Mopper extends Unit {
             }
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 MapInfo tile = nearbyMapInfos[i];
+                if(tile.hasRuin()) {
+                    switchStrategy(new MopRuinStrategy(tile.getMapLocation()));
+                    return;
+                }
                 if (tile.getPaint().isEnemy()) {
                     switchStrategy(new AggroStrategy());
                     return;
@@ -108,7 +175,7 @@ public class Mopper extends Unit {
             }
     
             BugNav.moveToward(target);
-            if (rc.getLocation() == curLoc) {
+            if (rc.getLocation() == locBeforeTurn) {
                 turnsNotMoved++;
                 if (turnsNotMoved >= 3) {
                     yieldStrategy();
