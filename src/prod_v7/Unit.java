@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v7;
 
 import battlecode.common.*;
 
@@ -53,11 +53,11 @@ public abstract class Unit extends Robot {
             }
         }
 
-        for (int i = nearbyMapInfos.length; --i >= 0;) {
-            MapInfo tile = nearbyMapInfos[i];
-            MapLocation loc = tile.getMapLocation();
-            memory[loc.x][loc.y] = tile.isPassable() ? MapLocationType.PASSABLE : (tile.isWall() ? MapLocationType.WALL : MapLocationType.RUIN);
-        }
+        // for (int i = nearbyMapInfos.length; --i >= 0;) {
+        //     MapInfo tile = nearbyMapInfos[i];
+        //     MapLocation loc = tile.getMapLocation();
+        //     memory[loc.x][loc.y] = tile.isPassable() ? MapLocationType.PASSABLE : (tile.isWall() ? MapLocationType.WALL : MapLocationType.RUIN);
+        // }
 
         for (int i = nearbyMapInfos.length; --i >= 0;) {
             MapInfo tile = nearbyMapInfos[i];
