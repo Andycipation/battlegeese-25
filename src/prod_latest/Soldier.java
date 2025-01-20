@@ -324,30 +324,24 @@ public class Soldier extends Unit {
                 for (int i = nearbyMapInfos.length; --i >= 0;) {
                     MapInfo tile = nearbyMapInfos[i];
                     MapLocation loc = tile.getMapLocation();
-                    if (rc.canSenseLocation(loc)) {
-                        RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
-                        if (tile.hasRuin() && robotInfo == null) {
-                            var towerType = getTowerToBuild();
-                            switchStrategy(new BuildTowerStrategy(loc, towerType), false);
-                            return;
-                        }
+                    if (tile.hasRuin() && rc.senseRobotAtLocation(loc) == null) {
+                        var towerType = getTowerToBuild();
+                        switchStrategy(new BuildTowerStrategy(loc, towerType), false);
+                        return;
                     }
                 }
             }
 
             // Kiting!
             // TODO: combine this into a single for loop, need to loop in max.
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                MapInfo tile = nearbyMapInfos[i];
-                MapLocation loc = tile.getMapLocation();
-                if (rc.canSenseRobotAtLocation(loc)) {
-                    RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
-                    if (prevLoc != null && !prevLoc.isWithinDistanceSquared(loc, actionRadiusSquared)
-                            && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo) && locBeforeTurn.distanceSquaredTo(prevLoc) < 4) {
-                        //    rc.setTimelineMarker("Kiting time!", 0, 255, 0);
-                        switchStrategy(new KitingStrategy(prevLoc, locBeforeTurn, loc), false);
-                        return;
-                    }
+            for (int i = nearbyEnemyRobots.length; --i >= 0;) {
+                RobotInfo robotInfo = nearbyEnemyRobots[i];
+                MapLocation loc = robotInfo.location;
+                if (prevLoc != null && !prevLoc.isWithinDistanceSquared(loc, actionRadiusSquared)
+                        && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo) && locBeforeTurn.distanceSquaredTo(prevLoc) < 4) {
+                    //    rc.setTimelineMarker("Kiting time!", 0, 255, 0);
+                    switchStrategy(new KitingStrategy(prevLoc, locBeforeTurn, loc), false);
+                    return;
                 }
             }
             prevLoc = locBeforeTurn;
