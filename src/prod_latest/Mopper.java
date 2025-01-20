@@ -28,17 +28,35 @@ public class Mopper extends Unit {
     }
     
     static class AggroStrategy extends MopperStrategy {
-    
-        AggroStrategy() {}
+
+        int cleanRuinCoolDown;
+        AggroStrategy(int _cleanRuinCoolDown) {
+            cleanRuinCoolDown = _cleanRuinCoolDown;
+        }
     
         @Override
         public void act() throws GameActionException {
+            if (cleanRuinCoolDown-- <= 0) {
+                for (int i = nearbyMapInfos.length; --i >= 0;) {
+                    MapInfo tile = nearbyMapInfos[i];
+                    MapLocation loc = tile.getMapLocation();
+                    RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
+                    if(tile.hasRuin() && robotInfo == null) {
+                        switchStrategy(new MopRuinStrategy(loc));
+                        return;
+                    }
+                }
+            }
+
+            MapLocation nextTarget = null;
+
             for (int i = nearbyEnemyRobots.length; --i >= 0;) {
                 RobotInfo robot = nearbyEnemyRobots[i];
                 MapLocation loc = robot.getLocation();
-                if (rc.canAttack(loc)) {
+                if (rc.canAttack(loc) && robot.getPaintAmount() > 0) {
                     rc.attack(loc);
-                    break;
+                } else {
+                    nextTarget = loc;
                 }
             }
     
@@ -51,16 +69,17 @@ public class Mopper extends Unit {
                 }
             }
             
-            MapLocation nextTarget = null;
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                MapInfo tile = nearbyMapInfos[i];
-                MapLocation loc = tile.getMapLocation();
-                if (tile.getPaint().isEnemy()) {
-                    nextTarget = loc;
-                    break;
-                }
+            if (nextTarget == null) {
+                for (int i = nearbyMapInfos.length; --i >= 0;) {
+                    MapInfo tile = nearbyMapInfos[i];
+                    MapLocation loc = tile.getMapLocation();
+                    if (tile.getPaint().isEnemy()) {
+                        nextTarget = loc;
+                        break;
+                    }
+                }    
             }
-    
+
             if (nextTarget == null) {
                 yieldStrategy();
                 return;
@@ -187,18 +206,18 @@ public class Mopper extends Unit {
                         return;
                     }
                 }
-
-                for (int i = nearbyMapInfos.length; --i >= 0;) {
-                    MapInfo tile = nearbyMapInfos[i];
-                    MapLocation loc = tile.getMapLocation();
-                    if (tile.getPaint().isEnemy()) {
-                        switchStrategy(new AggroStrategy());
-                        return;
-                    }
-                }
             }
             else {
                 switchStrategyCooldown--;
+            }
+            
+            for (int i = nearbyMapInfos.length; --i >= 0;) {
+                MapInfo tile = nearbyMapInfos[i];
+                MapLocation loc = tile.getMapLocation();
+                if (tile.getPaint().isEnemy()) {
+                    switchStrategy(new AggroStrategy(20));
+                    return;
+                }
             }
     
             BugNav.moveToward(target);
