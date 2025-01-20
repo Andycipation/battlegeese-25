@@ -11,6 +11,15 @@ public abstract class Unit extends Robot {
     static public MapLocation informedEmptyPaintLoc = null;
     static public int informedEmptyPaintLocTimestamp = -1;
 
+    public static enum MapLocationType {
+        PASSABLE, WALL, RUIN
+    };
+    public static MapLocationType[][] memory;
+
+    public Unit() {
+        memory = new MapLocationType[mapWidth][mapHeight];
+    }
+    
     public static boolean chkEmptyLoc(MapLocation loc, int timestamp) {
         if (timestamp > informedEmptyPaintLocTimestamp) {
             informedEmptyPaintLoc = loc;
@@ -39,6 +48,12 @@ public abstract class Unit extends Robot {
             if (Globals.isAllyPaintTower(info)) {
                 paintTowerLoc = info.location;
             }
+        }
+
+        for (int i = nearbyMapInfos.length; --i >= 0;) {
+            MapInfo tile = nearbyMapInfos[i];
+            MapLocation loc = tile.getMapLocation();
+            memory[loc.x][loc.y] = tile.isPassable() ? MapLocationType.PASSABLE : (tile.isWall() ? MapLocationType.WALL : MapLocationType.RUIN);
         }
 
         for (int i = nearbyMapInfos.length; --i >= 0;) {
@@ -119,7 +134,7 @@ public abstract class Unit extends Robot {
         }
 
         if (informedEnemyPaintLoc != null) {
-            rc.setIndicatorLine(locBeforeTurn, informedEnemyPaintLoc, 255, 150, 150);
+            rc.setIndicatorLine(rc.getLocation(), informedEnemyPaintLoc, 255, 150, 150);
         }
         if (informedEmptyPaintLoc != null) {
             // rc.setIndicatorLine(locBeforeTurn, informedEmptyPaintLoc, 150, 150, 255);
