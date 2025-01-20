@@ -57,18 +57,18 @@ public class Tower extends Robot {
         }
         if (!sensedEmptyLocs.empty()) {
             Logger.log("next empty: " + sensedEmptyLocs.poll());
-            // rc.setIndicatorLine(curLoc, sensedEmptyLocs.poll(), 0, 255, 255);
+            // rc.setIndicatorLine(locBeforeTurn, sensedEmptyLocs.poll(), 0, 255, 255);
         }
         if (!sensedEnemyLocs.empty()) {
             Logger.log("next enemy: " + sensedEnemyLocs.poll());
-            rc.setIndicatorLine(curLoc, sensedEnemyLocs.poll(), 0, 255 - 30 * enemyLevel, 255 - 30 * enemyLevel);
+            rc.setIndicatorLine(locBeforeTurn, sensedEnemyLocs.poll(), 0, 255 - 30 * enemyLevel, 255 - 30 * enemyLevel);
         }
 
         rc.broadcastMessage(towerToTowerComms.encode(
             new int[]{Comms.Protocal.TOWER_TO_TOWER.ordinal(),
                       emptyLevel,
                       enemyLevel,
-                      Comms.encodeMapLocation(curLoc)}));
+                      Comms.encodeMapLocation(locBeforeTurn)}));
         
     }
 
