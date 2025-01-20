@@ -11,7 +11,7 @@ public class Mopper extends Unit {
     }
 
     public static void yieldStrategy() {
-        strategy = new ExploreStrategy(8);
+        strategy = new ExploreStrategy(8, 6);
     }
 
     @Override
@@ -157,9 +157,11 @@ public class Mopper extends Unit {
         public static int turnsLeft;
         public static MapLocation target;
         public static int turnsNotMoved;
+        public static int switchStrategyCooldown;
     
-        ExploreStrategy(int turns) {
+        ExploreStrategy(int turns, int _switchStrategyCooldown) {
             turnsLeft = turns;
+            switchStrategyCooldown = _switchStrategyCooldown;
             turnsNotMoved = 0;
             target = new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
         }
@@ -173,23 +175,30 @@ public class Mopper extends Unit {
                     break;
                 }
             }
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                MapInfo tile = nearbyMapInfos[i];
-                MapLocation loc = tile.getMapLocation();
-                RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
-                if(tile.hasRuin() && robotInfo == null) {
-                    switchStrategy(new MopRuinStrategy(loc));
-                    return;
+
+
+            if (switchStrategyCooldown <= 0) {
+                for (int i = nearbyMapInfos.length; --i >= 0;) {
+                    MapInfo tile = nearbyMapInfos[i];
+                    MapLocation loc = tile.getMapLocation();
+                    RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
+                    if(tile.hasRuin() && robotInfo == null) {
+                        switchStrategy(new MopRuinStrategy(loc));
+                        return;
+                    }
+                }
+
+                for (int i = nearbyMapInfos.length; --i >= 0;) {
+                    MapInfo tile = nearbyMapInfos[i];
+                    MapLocation loc = tile.getMapLocation();
+                    if (tile.getPaint().isEnemy()) {
+                        switchStrategy(new AggroStrategy());
+                        return;
+                    }
                 }
             }
-
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                MapInfo tile = nearbyMapInfos[i];
-                MapLocation loc = tile.getMapLocation();
-                if (tile.getPaint().isEnemy()) {
-                    switchStrategy(new AggroStrategy());
-                    return;
-                }
+            else {
+                switchStrategyCooldown--;
             }
     
             BugNav.moveToward(target);
