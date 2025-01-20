@@ -166,4 +166,5 @@ public class Globals {
             return diagonalDirections[(idx + 2)%4];
         }
     }
+
 }

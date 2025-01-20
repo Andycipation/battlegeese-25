@@ -10,6 +10,7 @@ public abstract class Robot extends Globals {
     public static MapLocation curLoc;
     public static int numTowers;
     public static int roundNum;
+    Message[] lastRoundMessages;
     // numAllyAdjacent is indexed by the same was as Direction.getDirectionOrderNum
     public static int numAllyAdjacent[];
 
@@ -25,6 +26,7 @@ public abstract class Robot extends Globals {
         numTowers = rc.getNumberTowers();
         roundNum = rc.getRoundNum();
         numAllyAdjacent = new int[9];
+        lastRoundMessages = rc.readMessages(roundNum - 1);
         for (int i = nearbyAllyRobots.length; --i >= 0;) {
             MapLocation diff = nearbyAllyRobots[i].getLocation().translate(-curLoc.x, -curLoc.y);
             switch (diff.x * 10 + diff.y) {

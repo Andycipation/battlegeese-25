@@ -6,6 +6,71 @@ public class Tower extends Robot {
 
     public static SpawnStrategy spawnStrat;
     public static int unitsBuilt = 0;
+    public static CircularBuffer<MapLocation> sensedEmptyLocs = new CircularBuffer<MapLocation>(3);
+    public static CircularBuffer<MapLocation> sensedEnemyLocs = new CircularBuffer<MapLocation>(3);
+    public static Comms towerToTowerComms = new Comms(new int[]{Comms.IDENTIFIER_SZ, GameConstants.MAX_NUMBER_OF_TOWERS, GameConstants.MAX_NUMBER_OF_TOWERS, Comms.MAP_ENCODE_SZ});
+    public static int emptyLevel = GameConstants.MAX_NUMBER_OF_TOWERS - 1;
+    public static int enemyLevel = GameConstants.MAX_NUMBER_OF_TOWERS - 1;
+    
+    @Override
+    void initTurn() throws GameActionException {
+        super.initTurn();
+
+        if (roundNum % 10 == 0) { // reset sensed enemy/empty after some period of time
+            sensedEmptyLocs.clear();
+            sensedEnemyLocs.clear();
+            emptyLevel = GameConstants.MAX_NUMBER_OF_TOWERS - 1;
+            enemyLevel = GameConstants.MAX_NUMBER_OF_TOWERS - 1;
+        }
+
+        for (int i = nearbyMapInfos.length; --i >= 0; ) {
+            MapInfo tile = nearbyMapInfos[i];
+            MapLocation loc = tile.getMapLocation();
+            if (tile.getPaint() == PaintType.EMPTY) {
+                sensedEmptyLocs.push(loc);
+                emptyLevel = 0;
+            }
+            if (tile.getPaint().isEnemy()) {
+                sensedEnemyLocs.push(loc);
+                enemyLevel = 0;
+            }
+        }
+        
+        for (int i = lastRoundMessages.length; --i >= 0; ) {
+            int bytes = lastRoundMessages[i].getBytes();
+            if (Comms.getProtocol(bytes) == Comms.Protocal.TOWER_TO_TOWER) {
+                int[] data = towerToTowerComms.decode(bytes);
+                int relaxEmptyLevel = Math.min(data[1] + 1, GameConstants.MAX_NUMBER_OF_TOWERS - 1);
+                int relaxEnemyLevel = Math.min(data[2] + 1, GameConstants.MAX_NUMBER_OF_TOWERS - 1);
+                MapLocation adjLoc = Comms.decodeMapLocation(data[3]);
+                if (relaxEmptyLevel < emptyLevel) {
+                    sensedEmptyLocs.clear();
+                    emptyLevel = relaxEmptyLevel;
+                }
+                if (relaxEnemyLevel < enemyLevel) {
+                    sensedEnemyLocs.clear();
+                    enemyLevel = relaxEnemyLevel;
+                }
+                if (relaxEmptyLevel == emptyLevel) sensedEmptyLocs.push(adjLoc);
+                if (relaxEnemyLevel == enemyLevel) sensedEnemyLocs.push(adjLoc);
+            }
+        }
+        if (!sensedEmptyLocs.empty()) {
+            Logger.log("next empty: " + sensedEmptyLocs.poll());
+            // rc.setIndicatorLine(curLoc, sensedEmptyLocs.poll(), 0, 255, 255);
+        }
+        if (!sensedEnemyLocs.empty()) {
+            Logger.log("next enemy: " + sensedEnemyLocs.poll());
+            rc.setIndicatorLine(curLoc, sensedEnemyLocs.poll(), 0, 255 - 30 * enemyLevel, 255 - 30 * enemyLevel);
+        }
+
+        rc.broadcastMessage(towerToTowerComms.encode(
+            new int[]{Comms.Protocal.TOWER_TO_TOWER.ordinal(),
+                      emptyLevel,
+                      enemyLevel,
+                      Comms.encodeMapLocation(curLoc)}));
+        
+    }
 
     public static boolean tryBuildUnit(UnitType robotType) throws GameActionException {
         for (int i = adjacentDirections.length; --i >= 0; ) {
