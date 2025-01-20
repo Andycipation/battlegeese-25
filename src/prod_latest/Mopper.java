@@ -111,7 +111,7 @@ public class Mopper extends Unit {
         }
 
         // Assumes robot is spinning around ruin and returns true if there is something adjacent to mop
-        public boolean mop_nearby() throws GameActionException {
+        public boolean mopNearby() throws GameActionException {
             boolean ret = false;
 
             MapInfo[] actionableMapInfos = rc.senseNearbyMapInfos(rc.getLocation(), actionRadiusSquared);
@@ -149,7 +149,7 @@ public class Mopper extends Unit {
 
             if(!locBeforeTurn.isAdjacentTo(ruinLoc)) {
                 BugNav.moveToward(ruinLoc);
-                mop_nearby();
+                mopNearby();
             }
             else {
                 // walk around tower every turn
@@ -158,7 +158,7 @@ public class Mopper extends Unit {
                     rc.move(dir);
                 }
 
-                if(!mop_nearby()) {
+                if(!mopNearby()) {
                     turnsWithNothingToMop++;
                 }
             }
@@ -169,6 +169,7 @@ public class Mopper extends Unit {
             }
         }
 
+        @Override
         public String toString() {
             return "MopRuin " + ruinLoc + " " + turnsWithNothingToMop;
         }
@@ -243,6 +244,7 @@ public class Mopper extends Unit {
             }
         }
     
+        @Override
         public String toString() {
             return "Explore " + turnsLeft + " " + target;
         }
@@ -252,10 +254,12 @@ public class Mopper extends Unit {
         FollowStrategy() {
         }
 
+        @Override
         public void act() throws GameActionException {
 
         }
 
+        @Override
         public String toString () {
             return "Following enemy";
         }

@@ -3,28 +3,51 @@ package prod_latest;
 import battlecode.common.*;
 
 public class Soldier extends Unit {
+    /**
+     * Our strategy is to pick a random location and wander over for 8 turns, and if
+     * ruin is found switch to build tower strategy.
+     */
 
     static SoldierStrategy strategy;
 
     public static MapLocation prevLoc = null;
 
-    static void switchStrategy(SoldierStrategy newStrategy) {
+    static void switchStrategy(SoldierStrategy newStrategy, boolean acted) throws GameActionException {
         strategy = newStrategy;
+        if (!acted) {
+            strategy.act();
+        }
     }
 
-    public static void yieldStrategy() {
-        strategy = new ExploreStrategy(8);
+    public static void yieldStrategy(boolean acted) throws GameActionException {
+        if (rc.getPaint() < 50 && paintTowerLoc != null) {
+            Logger.log("refilling paint");
+            Logger.flush();
+            strategy = new RefillPaintStrategy(120);
+        } else {
+            var target = new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
+            strategy = new ExploreStrategy(target, 8);
+        }
+        if (!acted) {
+            strategy.act();
+        }
     }
 
     @Override
     void play() throws GameActionException {
         if (strategy == null) {
-            yieldStrategy();
+            yieldStrategy(false);
+            return;
         }
-        if (rc.getPaint() < 60 && paintTowerLoc != null) {
-            Logger.log("refilling paint");
-            Logger.flush();
-            strategy = new RefillPaintStrategy();
+        var paint = rc.getPaint();
+        if (paint < 60) {
+            if (paintTowerLoc != null) {
+                Logger.log("refilling paint");
+                Logger.flush();
+                strategy = new RefillPaintStrategy(120);
+            } else if (paint < 30) {
+                yieldStrategy(false);
+            }
         }
         strategy.act();
         Logger.log(strategy.toString());
@@ -38,6 +61,65 @@ public class Soldier extends Unit {
         abstract public void act() throws GameActionException;
     }
 
+    enum MarkType {
+        // BUILD_SRP,
+        BUILD_PAINT_TOWER,
+        BUILD_MONEY_TOWER,
+    }
+
+    private static int markToInt(PaintType mark) {
+        return switch (mark) {
+            case ALLY_PRIMARY -> 1;
+            case ALLY_SECONDARY -> 2;
+            default -> 0;
+        };
+    }
+
+    private static boolean canMarkRuin(MapLocation center) {
+        var loc1 = center.add(Direction.NORTH);
+        var loc2 = center.add(Direction.NORTHEAST);
+        return rc.canMark(loc1) && rc.canMark(loc2);
+    }
+
+    private static boolean canSenseMarks(MapLocation center) throws GameActionException {
+        var loc1 = center.add(Direction.NORTH);
+        var loc2 = center.add(Direction.NORTHEAST);
+        return rc.canSenseLocation(loc1) && rc.canSenseLocation(loc2);
+    }
+
+    private static MarkType getMarkType(MapLocation center) throws GameActionException {
+        var loc1 = center.add(Direction.NORTH);
+        var loc2 = center.add(Direction.NORTHEAST);
+        int mark1 = markToInt(rc.senseMapInfo(loc1).getMark());
+        int mark2 = markToInt(rc.senseMapInfo(loc2).getMark());
+        if (mark1 == 1) return MarkType.BUILD_MONEY_TOWER;
+        if (mark1 == 2 && mark2 == 1) return MarkType.BUILD_PAINT_TOWER;
+        // if (mark1 == 2 && mark2 == 2) return MarkType.BUILD_SRP;
+        return null;
+    }
+
+    private static boolean markMap(MapLocation center, MarkType markType) throws GameActionException {
+        var loc1 = center.add(Direction.NORTH);
+        var loc2 = center.add(Direction.NORTHEAST);
+        if (rc.getPaint() >= 2 && rc.canMark(loc1) && rc.canMark(loc2)) {
+            switch (markType) {
+                case BUILD_MONEY_TOWER -> {
+                    rc.mark(loc1, false);
+                }
+                case BUILD_PAINT_TOWER -> {
+                    rc.mark(loc1, true);
+                    rc.mark(loc2, false);
+                }
+                // case BUILD_SRP -> {
+                //     rc.mark(loc1, true);
+                //     rc.mark(loc2, true);
+                // }
+            }
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Strategy to build a tower at specified ruin location
      */
@@ -46,108 +128,144 @@ public class Soldier extends Unit {
         public static MapLocation ruinLoc;
         public static UnitType towerType;
 
-        BuildTowerStrategy(MapLocation _ruinLoc) {
+        BuildTowerStrategy(MapLocation _ruinLoc, UnitType _towerType) {
+            // Precondition: we can sense the ruin location
             ruinLoc = _ruinLoc;
+            assert(ruinLoc != null);
+            towerType = _towerType;
+        }
 
-            int moneyTowerWeight = 8;
-            int paintTowerWeight = numTowers;
-            towerType = switch (randChoice(moneyTowerWeight, paintTowerWeight)) {
-                case 0 -> UnitType.LEVEL_ONE_MONEY_TOWER;
-                default -> UnitType.LEVEL_ONE_PAINT_TOWER;
-            };
+        private boolean isRuinMostlyDone() throws GameActionException {
+            int visible = 0;
+            int done = 0;
+            for (var info : nearbyMapInfos) {
+                if (ruinLoc.distanceSquaredTo(info.getMapLocation()) <= GameConstants.RESOURCE_PATTERN_RADIUS_SQUARED) {
+                    visible += 1;
+                    var expectedColor = getTowerPaintColor(ruinLoc, info.getMapLocation(), towerType);
+                    if (expectedColor == info.getPaint()) {
+                        done += 1;
+                    }
+                }
+            }
+            // TODO: optimize this return statement to use ints
+            return 1.0 * visible / done > 0.8;
         }
 
         @Override
         public void act() throws GameActionException {
-            if (ruinLoc == null || !rc.canSenseLocation(ruinLoc) || rc.senseRobotAtLocation(ruinLoc) != null || rc.getNumberTowers() == 25) { // no ruin found or ruin is completed
-                yieldStrategy();
+            if (!rc.canSenseLocation(ruinLoc)
+                    || rc.senseRobotAtLocation(ruinLoc) != null
+                    || rc.getNumberTowers() == 25) {
+                // The tower is completed, or we have the maximum number of towers
+                yieldStrategy(false);
                 return;
             }
 
-            // if tower is already being built, match to be consistent
-            {
-                MapLocation loc = ruinLoc.add(Direction.NORTH);
-                if (rc.canSenseLocation(loc)) {
-                    switch (rc.senseMapInfo(loc).getMark()) {
-                        case ALLY_PRIMARY:
-                            towerType = UnitType.LEVEL_ONE_PAINT_TOWER;
-                            break;
-                        case ALLY_SECONDARY:
-                            towerType = UnitType.LEVEL_ONE_MONEY_TOWER;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-
-            // mark the tower being built
-            {
-                MapLocation loc = ruinLoc.add(Direction.NORTH);
-                if (rc.canSenseLocation(loc)) {
-                    PaintType toMark = switch (towerType) {
-                        case UnitType.LEVEL_ONE_PAINT_TOWER -> PaintType.ALLY_PRIMARY;
-                        case UnitType.LEVEL_ONE_MONEY_TOWER -> PaintType.ALLY_SECONDARY;
-                        default -> PaintType.ALLY_PRIMARY;
-                    };
-                    if (rc.senseMapInfo(loc).getMark() != toMark && rc.canMark(loc)) {
-                        rc.mark(loc, toMark == PaintType.ALLY_SECONDARY);
-                    }
-                }
-            }
-
-            if (!locBeforeTurn.isAdjacentTo(ruinLoc)) { // if ruin is not adjacent, walk closer
+            // If we can't sense the marks, move closer without painting underneath us.
+            if (!canSenseMarks(ruinLoc)) {
                 BugNav.moveToward(ruinLoc);
-                tryPaintBelowSelf(getTowerPaintColor(ruinLoc, locBeforeTurn, towerType));
-            } else { // can sense ruin, so try to paint it in
+                return;
+            }
 
-                for (int i = adjacentDirections.length; --i >= 0;) {
-                    MapLocation loc = ruinLoc.add(adjacentDirections[i]);
-                    if (loc == rc.getLocation()) {
-                        continue;
+            // Get the tower type we are currently trying to build, or make the mark ourselves
+            MarkType markType = getMarkType(ruinLoc);
+            if (markType == null) {
+                // We are the first to arrive; try to mark the ruin accordingly
+                var toMarkType = switch (towerType) {
+                    case LEVEL_ONE_MONEY_TOWER -> MarkType.BUILD_MONEY_TOWER;
+                    case LEVEL_ONE_PAINT_TOWER -> MarkType.BUILD_PAINT_TOWER;
+                    default -> {
+                        throw new IllegalArgumentException();
                     }
-                    RobotInfo robot = rc.senseRobotAtLocation(loc);
-                    if (robot != null && robot.getTeam() == myTeam && (robot.getPaintAmount() > rc.getPaint())) {
-                        switchStrategy(new ExploreStrategy(8, 8));
+                };
+                if (!canMarkRuin(ruinLoc)) {
+                    BugNav.moveToward(ruinLoc);
+                    return;
+                }
+                if (!markMap(ruinLoc, toMarkType)) {
+                    return;
+                }
+            } else {
+                towerType = switch (markType) {
+                    case BUILD_MONEY_TOWER -> UnitType.LEVEL_ONE_MONEY_TOWER;
+                    case BUILD_PAINT_TOWER -> UnitType.LEVEL_ONE_PAINT_TOWER;
+                };
+            }
+
+            Logger.log("has mark " + markType);
+
+            // If we don't have nearly enough chips to finish this, leave
+            if (rc.getChips() < 300) {
+                yieldStrategy(false);
+                return;
+            }
+
+            // If there is already a robot next to the ruin and it's mostly finished, we go explore somewhere else instead
+            boolean mostlyDone = isRuinMostlyDone();
+            if (mostlyDone) {
+                for (var robot : nearbyAllyRobots) {
+                    if (robot.type == UnitType.SOLDIER && robot.location.isAdjacentTo(ruinLoc)) {
+                        yieldStrategy(false);
                         return;
                     }
                 }
+            }
 
-                // walk around tower every turn to not miss any squares
-                Direction dir = locBeforeTurn.directionTo(ruinLoc).rotateLeft();
-                if (rc.canMove(dir)) {
-                    rc.move(dir);
-                    tryPaintBelowSelf(getTowerPaintColor(ruinLoc, rc.getLocation(), towerType));
+            // If ruin is not adjacent, walk closer
+            if (!locBeforeTurn.isAdjacentTo(ruinLoc)) {
+                BugNav.moveToward(ruinLoc);
+                tryPaintBelowSelf(getTowerPaintColor(ruinLoc, locBeforeTurn, towerType));
+                return;
+            }
+
+            // // Check adjacent squares for robots; if there is one, leave if tiebreaker
+            // for (int i = adjacentDirections.length; --i >= 0;) {
+            //     MapLocation loc = ruinLoc.add(adjacentDirections[i]);
+            //     if (loc == rc.getLocation()) {
+            //         continue;
+            //     }
+            //     RobotInfo robot = rc.senseRobotAtLocation(loc);
+            //     if (robot != null
+            //             && robot.getTeam() == myTeam
+            //             && (robot.getPaintAmount() > rc.getPaint() || robot.getPaintAmount() == rc.getPaint() && robot.getID() > rc.getID())) {
+            //         yieldStrategy(false);
+            //         return;
+            //     }
+            // }
+
+            // Walk around tower every turn to not miss any squares
+            Direction dir = locBeforeTurn.directionTo(ruinLoc).rotateLeft();
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+                tryPaintBelowSelf(getTowerPaintColor(ruinLoc, rc.getLocation(), towerType));
+            }
+
+            // Try paint tiles
+            MapInfo[] actionableMapInfos = rc.senseNearbyMapInfos(rc.getLocation(), actionRadiusSquared);
+            for (int i = actionableMapInfos.length; --i >= 0;) {
+                MapInfo tile = actionableMapInfos[i];
+                MapLocation loc = tile.getMapLocation();
+                if (ruinLoc.distanceSquaredTo(loc) > GameConstants.RESOURCE_PATTERN_RADIUS_SQUARED) {
+                    continue;
                 }
+                if (tryPaint(loc, getTowerPaintColor(ruinLoc, loc, towerType))) {
+                    break;
+                }
+            }
 
-                // try paint tiles
-                MapInfo[] actionableMapInfos = rc.senseNearbyMapInfos(rc.getLocation(), actionRadiusSquared);
+            // Try complete tower
+            if (rc.canCompleteTowerPattern(towerType, ruinLoc)) {
+                rc.completeTowerPattern(towerType, ruinLoc);
+                yieldStrategy(true);
+                return;
+            }
+
+            // Try to paint any tiles outside radius while we're waiting
+            if (rc.getPaint() > 30) {
                 for (int i = actionableMapInfos.length; --i >= 0;) {
                     MapInfo tile = actionableMapInfos[i];
                     MapLocation loc = tile.getMapLocation();
-                    if (!withinPattern(ruinLoc, loc)) {
-                        continue;
-                    }
-                    if (tryPaint(loc, getTowerPaintColor(ruinLoc, loc, towerType))) {
-                        break;
-                    }
-                }
-
-                // try complete tower
-                if (rc.canCompleteTowerPattern(towerType, ruinLoc)) {
-                    rc.completeTowerPattern(towerType, ruinLoc);
-                    yieldStrategy();
-                    return;
-                }
-
-                // try to paint any tiles outside radius
-                if (rc.getPaint() > 30) {
-                    for (int i = actionableMapInfos.length; --i >= 0;) {
-                        MapInfo tile = actionableMapInfos[i];
-                        MapLocation loc = tile.getMapLocation();
-                        if (withinPattern(ruinLoc, loc)) {
-                            continue;
-                        }
+                    if (ruinLoc.distanceSquaredTo(loc) > GameConstants.RESOURCE_PATTERN_RADIUS_SQUARED) {
                         if (tryPaint(loc, getSrpPaintColor(loc))) {
                             break;
                         }
@@ -162,42 +280,57 @@ public class Soldier extends Unit {
         }
     }
 
-    /**
-     * Strategy to pick a random location and wander over for X turns, and if
-     * ruin is found switch to build tower strategy.
-     */
+    // Moves towards `target` for `turns` turns.
     static class ExploreStrategy extends SoldierStrategy {
 
-        public static int turnsLeft;
         public static MapLocation target;
-        public static int turnsNotMoved;
-        public static int targetRuinCooldown;
+        public static int turnsLeft;
 
-        ExploreStrategy(int turns) {
-            this(turns, 0);
+        public static int targetRuinCooldown;
+        public static int turnsNotMoved;
+
+        ExploreStrategy(MapLocation _target, int turns) {
+            target = _target;
+            turnsLeft = turns;
+            targetRuinCooldown = 6;
+            turnsNotMoved = 0;
         }
 
-        ExploreStrategy(int turns, int _targetRuinCooldown) {
-            turnsLeft = turns;
-            targetRuinCooldown = _targetRuinCooldown;
-            turnsNotMoved = 0;
-            target = new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
+        UnitType getTowerToBuild() {
+            if (rc.getNumberTowers() <= 3) {
+                return UnitType.LEVEL_ONE_MONEY_TOWER;
+            }
+            int moneyTowerWeight = 4;
+            int paintTowerWeight = numTowers;
+            return switch (randChoice(moneyTowerWeight, paintTowerWeight)) {
+                case 0 -> UnitType.LEVEL_ONE_MONEY_TOWER;
+                default -> UnitType.LEVEL_ONE_PAINT_TOWER;
+            };
         }
 
         @Override
         public void act() throws GameActionException {
-            if (rc.getNumberTowers() < 25 && targetRuinCooldown <= 0) {
+            if (turnsLeft == 0) {
+                yieldStrategy(false);
+                return;
+            }
+            turnsLeft -= 1;
+            targetRuinCooldown -= 1;
+
+            // Check for nearby ruins
+            if (targetRuinCooldown <= 0 && rc.getNumberTowers() < 25) {
                 for (int i = nearbyMapInfos.length; --i >= 0;) {
                     MapInfo tile = nearbyMapInfos[i];
                     MapLocation loc = tile.getMapLocation();
-                    RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
-                    if (tile.hasRuin() && robotInfo == null) {
-                        switchStrategy(new BuildTowerStrategy(loc));
-                        return;
+                    if (rc.canSenseLocation(loc)) {
+                        RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
+                        if (tile.hasRuin() && robotInfo == null) {
+                            var towerType = getTowerToBuild();
+                            switchStrategy(new BuildTowerStrategy(loc, towerType), false);
+                            return;
+                        }
                     }
                 }
-            } else {
-                targetRuinCooldown--;
             }
 
             // Kiting!
@@ -205,12 +338,14 @@ public class Soldier extends Unit {
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 MapInfo tile = nearbyMapInfos[i];
                 MapLocation loc = tile.getMapLocation();
-                RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
-                if (prevLoc != null && !prevLoc.isWithinDistanceSquared(loc, actionRadiusSquared)
-                        && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo) && locBeforeTurn.distanceSquaredTo(prevLoc) < 4) {
-                    //    rc.setTimelineMarker("Kiting time!", 0, 255, 0);
-                    switchStrategy(new KitingStrategy(prevLoc, locBeforeTurn, loc));
-                    return;
+                if (rc.canSenseRobotAtLocation(loc)) {
+                    RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
+                    if (prevLoc != null && !prevLoc.isWithinDistanceSquared(loc, actionRadiusSquared)
+                            && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo) && locBeforeTurn.distanceSquaredTo(prevLoc) < 4) {
+                        //    rc.setTimelineMarker("Kiting time!", 0, 255, 0);
+                        switchStrategy(new KitingStrategy(prevLoc, locBeforeTurn, loc), false);
+                        return;
+                    }
                 }
             }
             prevLoc = locBeforeTurn;
@@ -238,18 +373,11 @@ public class Soldier extends Unit {
             }
 
             if (rc.getLocation() == locBeforeTurn) {
-                turnsNotMoved++;
-                if (turnsNotMoved >= 3) {
-                    yieldStrategy();
-                    return;
+                if (++turnsNotMoved == 3) {
+                    yieldStrategy(true);
                 }
             } else {
                 turnsNotMoved = 0;
-            }
-            turnsLeft--;
-            if (turnsLeft <= 0) { // if turn counter is up, also yield
-                yieldStrategy();
-                return;
             }
         }
 
@@ -280,7 +408,7 @@ public class Soldier extends Unit {
                 // check if target is still alive
                 RobotInfo robotInfo = rc.senseRobotAtLocation(target);
                 if (robotInfo == null) {
-                    yieldStrategy();
+                    yieldStrategy(false);
                     return;
                 }
 
@@ -302,7 +430,7 @@ public class Soldier extends Unit {
                     }
                     // otherwise skaddadle
                     if (runAway) {
-                        switchStrategy(new RunAwayStrategy(target, 4));
+                        switchStrategy(new RunAwayStrategy(target, 4), false);
                         return;
                     }
                 }
@@ -316,7 +444,6 @@ public class Soldier extends Unit {
                 tryAttack(target);
             }
             turnsMoved++;
-            // System.out.println(toString());
         }
 
         @Override
@@ -326,18 +453,25 @@ public class Soldier extends Unit {
     }
 
     static class RefillPaintStrategy extends SoldierStrategy {
+        private static int refillTo;
 
-        public RefillPaintStrategy() {
+        public RefillPaintStrategy(int _refillTo) {
+            // assert(rc.getPaint() < refillTo);
+            refillTo = _refillTo;
         }
 
         @Override
         public void act() throws GameActionException {
             // TODO: try to spread out among the robots waiting to be refilled.
-            if (paintTowerLoc == null) {
-                yieldStrategy();
+            if (rc.getPaint() >= refillTo) {
+                yieldStrategy(false);
                 return;
             }
-            var dir = BugNav.getDirectionToMove(paintTowerLoc);
+            if (paintTowerLoc == null) {
+                yieldStrategy(false);
+                return;
+            }
+            final var dir = BugNav.getDirectionToMove(paintTowerLoc);
             if (dir == null) {
                 // We have no valid moves!
                 return;
@@ -350,29 +484,29 @@ public class Soldier extends Unit {
                 return;
             }
 
-            var paintTowerInfo = rc.senseRobotAtLocation(paintTowerLoc);
+            final var paintTowerInfo = rc.senseRobotAtLocation(paintTowerLoc);
             if (!Globals.isAllyPaintTower(paintTowerInfo)) {
                 System.out.println("Our paint tower got destroyed and changed to something else!");
                 paintTowerLoc = null;
-                yieldStrategy();
+                yieldStrategy(false);
                 return;
             }
 
             // If we wouldn't start incurring penalty from the tower, move closer
-            var nextLoc = rc.getLocation().add(dir);
+            final var nextLoc = rc.getLocation().add(dir);
             if (nextLoc.distanceSquaredTo(paintTowerLoc) > GameConstants.PAINT_TRANSFER_RADIUS_SQUARED) {
                 rc.move(dir);
                 tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
                 return;
             }
 
-            var spaceToFill = Globals.paintCapacity - rc.getPaint();
+            final var spaceToFill = refillTo - rc.getPaint();
             if (paintTowerInfo.getPaintAmount() >= spaceToFill) {
                 rc.move(dir);
                 tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
                 if (rc.canTransferPaint(paintTowerLoc, -spaceToFill)) {
                     rc.transferPaint(paintTowerLoc, -spaceToFill);
-                    yieldStrategy();
+                    yieldStrategy(true);
                 }
             }
         }
@@ -395,11 +529,12 @@ public class Soldier extends Unit {
             turns = _turns;
         }
 
-        // just move in the opposite direction lol
+        @Override
         public void act() throws GameActionException {
+            // just move in the opposite direction lol
             if (turns == 0) {
-                yieldStrategy();
-                return ;
+                yieldStrategy(false);
+                return;
             }
             Direction dir = target.directionTo(rc.getLocation());
             if (rc.canMove(dir)) {
@@ -434,10 +569,9 @@ public class Soldier extends Unit {
         @Override
         public void act() throws GameActionException {
             MapLocation curLoc = rc.getLocation();
-
             if (curLoc.equals(target)) {
-                yieldStrategy();
-                return ;
+                yieldStrategy(false);
+                return;
             }
 
             MapLocation ruinLoc = null;
