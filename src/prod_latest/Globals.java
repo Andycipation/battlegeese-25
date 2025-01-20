@@ -215,5 +215,52 @@ public class Globals {
     
         return sortedLocs;
     }
-    
+
+    public static boolean tryPaint(MapLocation loc, PaintType paintType) throws GameActionException {
+        if (rc.isActionReady() && rc.canAttack(loc) && rc.canPaint(loc) && rc.senseMapInfo(loc).getPaint() != paintType) {
+            rc.attack(loc, paintType == PaintType.ALLY_SECONDARY);
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean tryPaintBelowSelf(PaintType paintType) throws GameActionException {
+        return tryPaint(rc.getLocation(), paintType);
+    }
+
+    public static boolean tryAttack(MapLocation loc) throws GameActionException {
+        if (rc.isActionReady() && rc.canAttack(loc)) {
+            rc.attack(loc);
+            return true;
+        }
+        return false;
+    }
+
+    public static PaintType getTowerPaintColor(MapLocation center, MapLocation loc, UnitType towerType) throws GameActionException {
+        if (!withinPattern(center, loc)) {
+            return PaintType.ALLY_PRIMARY;
+        }
+        int row = center.x - loc.x + 2;
+        int col = center.y - loc.y + 2;
+        boolean useSecondary = switch (towerType) {
+            case LEVEL_ONE_PAINT_TOWER -> paintTowerPattern[row][col];
+            case LEVEL_ONE_MONEY_TOWER -> moneyTowerPattern[row][col];
+            case LEVEL_ONE_DEFENSE_TOWER -> defenseTowerPattern[row][col];
+            default -> false;
+        };
+        return useSecondary ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY;
+    }
+
+    public static boolean getSrpUseSecondary(MapLocation loc) throws GameActionException {
+        return resourcePattern[loc.x % 4][loc.y % 4];
+    }
+
+    public static PaintType getSrpPaintColor(MapLocation loc) throws GameActionException {
+        return (getSrpUseSecondary(loc) ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY);
+    }
+
+    public static boolean isInSrpCenterLocation(MapLocation loc) {
+        return loc.x % 4 == 2 && loc.y % 4 == 2;
+    }
+
 }

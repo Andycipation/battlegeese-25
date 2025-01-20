@@ -21,6 +21,13 @@ public class Mopper extends Unit {
         }
         strategy.act();
         Logger.log(strategy.toString());
+        if (rc.getPaint() < 30 && paintTowerLoc != null) {
+            Logger.log("refilling paint");
+            Logger.flush();
+            strategy = new RefillPaintStrategy();
+        }
+        // also wanna upgrade towers nearby if possible
+        upgradeTowers();
     }
     
     abstract static class MopperStrategy extends Mopper {
@@ -210,7 +217,7 @@ public class Mopper extends Unit {
             else {
                 switchStrategyCooldown--;
             }
-            
+
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 MapInfo tile = nearbyMapInfos[i];
                 MapLocation loc = tile.getMapLocation();
@@ -252,5 +259,68 @@ public class Mopper extends Unit {
         public String toString () {
             return "Following enemy";
         }
+    }
+
+
+
+    // badarded -- refill paint strategy, copied from solder
+    // TODO: unify this
+    static class RefillPaintStrategy extends MopperStrategy {
+
+        public RefillPaintStrategy() {
+        }
+
+        @Override
+        public void act() throws GameActionException {
+            // TODO: try to spread out among the robots waiting to be refilled.
+            if (paintTowerLoc == null) {
+                yieldStrategy();
+                return;
+            }
+            var dir = BugNav.getDirectionToMove(paintTowerLoc);
+            if (dir == null) {
+                // We have no valid moves!
+                return;
+            }
+
+            if (!rc.canSenseRobotAtLocation(paintTowerLoc)) {
+                // We're still very far, just move closer
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                return;
+            }
+
+            var paintTowerInfo = rc.senseRobotAtLocation(paintTowerLoc);
+            if (!Globals.isAllyPaintTower(paintTowerInfo)) {
+                System.out.println("Our paint tower got destroyed and changed to something else!");
+                paintTowerLoc = null;
+                yieldStrategy();
+                return;
+            }
+
+            // If we wouldn't start incurring penalty from the tower, move closer
+            var nextLoc = rc.getLocation().add(dir);
+            if (nextLoc.distanceSquaredTo(paintTowerLoc) > GameConstants.PAINT_TRANSFER_RADIUS_SQUARED) {
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                return;
+            }
+
+            var spaceToFill = Globals.paintCapacity - rc.getPaint();
+            if (paintTowerInfo.getPaintAmount() >= spaceToFill) {
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                if (rc.canTransferPaint(paintTowerLoc, -spaceToFill)) {
+                    rc.transferPaint(paintTowerLoc, -spaceToFill);
+                    yieldStrategy();
+                }
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "RefillPaintStrategy " + paintTowerLoc;
+        }
+
     }
 }

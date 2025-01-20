@@ -21,6 +21,9 @@ public class Splasher extends Unit {
         }
         strategy.act();
         Logger.log(strategy.toString());
+
+        // also wanna upgrade towers nearby if possible
+        upgradeTowers();
     }
 
     static abstract class SplasherStrategy {

@@ -33,4 +33,14 @@ public abstract class Unit extends Robot {
     void endTurn() throws GameActionException {
         super.initTurn();
     }
+
+    void upgradeTowers() throws GameActionException {
+        for (RobotInfo robotInfo : nearbyAllyRobots) {
+            if (robotInfo.type.canUpgradeType()) {
+                if (rc.canUpgradeTower(robotInfo.location)) {
+                    rc.upgradeTower(robotInfo.location);
+                }
+            }
+        }
+    }
 }
