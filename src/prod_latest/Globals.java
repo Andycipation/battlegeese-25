@@ -140,6 +140,10 @@ public class Globals {
         return x < w1 + w2 + w3 + w4 ? 3 : 4;
     }
 
+    public static boolean withinPattern(MapLocation center, MapLocation loc) {
+        return Math.abs(center.x - loc.x) <= 2 && Math.abs(center.y - loc.y) <= 2;
+    }
+    
     /**
      * Returns whether the given type is the type of a paint tower.
      */

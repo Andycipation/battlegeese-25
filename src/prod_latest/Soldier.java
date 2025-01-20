@@ -30,11 +30,6 @@ public class Soldier extends Unit {
         return false;
     }
 
-
-    public static boolean withinPattern(MapLocation center, MapLocation loc) {
-        return Math.abs(center.x - loc.x) <= 2 && Math.abs(center.y - loc.y) <= 2;
-    }
-
     public static PaintType getTowerPaintColor(MapLocation center, MapLocation loc, UnitType towerType) throws GameActionException {
         if (!withinPattern(center, loc)) {
             return PaintType.ALLY_PRIMARY;
