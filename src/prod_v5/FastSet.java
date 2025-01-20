@@ -1,4 +1,4 @@
-package template;
+package prod_v5;
 
 import battlecode.common.*;
 

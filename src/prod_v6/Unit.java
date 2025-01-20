@@ -1,4 +1,4 @@
-package prod_jan_19_9_pm;
+package prod_v6;
 
 import battlecode.common.*;
 
@@ -32,5 +32,15 @@ public abstract class Unit extends Robot {
      */
     void endTurn() throws GameActionException {
         super.initTurn();
+    }
+
+    void upgradeTowers() throws GameActionException {
+        for (RobotInfo robotInfo : nearbyAllyRobots) {
+            if (robotInfo.type.canUpgradeType()) {
+                if (rc.canUpgradeTower(robotInfo.location)) {
+                    rc.upgradeTower(robotInfo.location);
+                }
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-package prod_jan_19_9_pm;
+package prod_v6;
 
 import battlecode.common.*;
 
@@ -21,6 +21,13 @@ public class Mopper extends Unit {
         }
         strategy.act();
         Logger.log(strategy.toString());
+        if (rc.getPaint() < 30 && paintTowerLoc != null) {
+            Logger.log("refilling paint");
+            Logger.flush();
+            strategy = new RefillPaintStrategy();
+        }
+        // also wanna upgrade towers nearby if possible
+        upgradeTowers();
     }
     
     abstract static class MopperStrategy extends Mopper {
@@ -28,17 +35,35 @@ public class Mopper extends Unit {
     }
     
     static class AggroStrategy extends MopperStrategy {
-    
-        AggroStrategy() {}
+
+        int cleanRuinCoolDown;
+        AggroStrategy(int _cleanRuinCoolDown) {
+            cleanRuinCoolDown = _cleanRuinCoolDown;
+        }
     
         @Override
         public void act() throws GameActionException {
+            if (cleanRuinCoolDown-- <= 0) {
+                for (int i = nearbyMapInfos.length; --i >= 0;) {
+                    MapInfo tile = nearbyMapInfos[i];
+                    MapLocation loc = tile.getMapLocation();
+                    RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
+                    if(tile.hasRuin() && robotInfo == null) {
+                        switchStrategy(new MopRuinStrategy(loc));
+                        return;
+                    }
+                }
+            }
+
+            MapLocation nextTarget = null;
+
             for (int i = nearbyEnemyRobots.length; --i >= 0;) {
                 RobotInfo robot = nearbyEnemyRobots[i];
                 MapLocation loc = robot.getLocation();
-                if (rc.canAttack(loc)) {
+                if (rc.canAttack(loc) && robot.getPaintAmount() > 0) {
                     rc.attack(loc);
-                    break;
+                } else {
+                    nextTarget = loc;
                 }
             }
     
@@ -51,16 +76,17 @@ public class Mopper extends Unit {
                 }
             }
             
-            MapLocation nextTarget = null;
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                MapInfo tile = nearbyMapInfos[i];
-                MapLocation loc = tile.getMapLocation();
-                if (tile.getPaint().isEnemy()) {
-                    nextTarget = loc;
-                    break;
-                }
+            if (nextTarget == null) {
+                for (int i = nearbyMapInfos.length; --i >= 0;) {
+                    MapInfo tile = nearbyMapInfos[i];
+                    MapLocation loc = tile.getMapLocation();
+                    if (tile.getPaint().isEnemy()) {
+                        nextTarget = loc;
+                        break;
+                    }
+                }    
             }
-    
+
             if (nextTarget == null) {
                 yieldStrategy();
                 return;
@@ -85,7 +111,7 @@ public class Mopper extends Unit {
         }
 
         // Assumes robot is spinning around ruin and returns true if there is something adjacent to mop
-        public boolean mop_nearby() throws GameActionException {
+        public boolean mopNearby() throws GameActionException {
             boolean ret = false;
 
             MapInfo[] actionableMapInfos = rc.senseNearbyMapInfos(rc.getLocation(), actionRadiusSquared);
@@ -123,7 +149,7 @@ public class Mopper extends Unit {
 
             if(!locBeforeTurn.isAdjacentTo(ruinLoc)) {
                 BugNav.moveToward(ruinLoc);
-                mop_nearby();
+                mopNearby();
             }
             else {
                 // walk around tower every turn
@@ -132,7 +158,7 @@ public class Mopper extends Unit {
                     rc.move(dir);
                 }
 
-                if(!mop_nearby()) {
+                if(!mopNearby()) {
                     turnsWithNothingToMop++;
                 }
             }
@@ -143,6 +169,7 @@ public class Mopper extends Unit {
             }
         }
 
+        @Override
         public String toString() {
             return "MopRuin " + ruinLoc + " " + turnsWithNothingToMop;
         }
@@ -187,18 +214,18 @@ public class Mopper extends Unit {
                         return;
                     }
                 }
-
-                for (int i = nearbyMapInfos.length; --i >= 0;) {
-                    MapInfo tile = nearbyMapInfos[i];
-                    MapLocation loc = tile.getMapLocation();
-                    if (tile.getPaint().isEnemy()) {
-                        switchStrategy(new AggroStrategy());
-                        return;
-                    }
-                }
             }
             else {
                 switchStrategyCooldown--;
+            }
+
+            for (int i = nearbyMapInfos.length; --i >= 0;) {
+                MapInfo tile = nearbyMapInfos[i];
+                MapLocation loc = tile.getMapLocation();
+                if (tile.getPaint().isEnemy()) {
+                    switchStrategy(new AggroStrategy(20));
+                    return;
+                }
             }
     
             BugNav.moveToward(target);
@@ -217,8 +244,87 @@ public class Mopper extends Unit {
             }
         }
     
+        @Override
         public String toString() {
             return "Explore " + turnsLeft + " " + target;
         }
+    }
+
+    static class FollowStrategy extends MopperStrategy {
+        FollowStrategy() {
+        }
+
+        @Override
+        public void act() throws GameActionException {
+
+        }
+
+        @Override
+        public String toString () {
+            return "Following enemy";
+        }
+    }
+
+
+
+    // badarded -- refill paint strategy, copied from solder
+    // TODO: unify this
+    static class RefillPaintStrategy extends MopperStrategy {
+
+        public RefillPaintStrategy() {
+        }
+
+        @Override
+        public void act() throws GameActionException {
+            // TODO: try to spread out among the robots waiting to be refilled.
+            if (paintTowerLoc == null) {
+                yieldStrategy();
+                return;
+            }
+            var dir = BugNav.getDirectionToMove(paintTowerLoc);
+            if (dir == null) {
+                // We have no valid moves!
+                return;
+            }
+
+            if (!rc.canSenseRobotAtLocation(paintTowerLoc)) {
+                // We're still very far, just move closer
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                return;
+            }
+
+            var paintTowerInfo = rc.senseRobotAtLocation(paintTowerLoc);
+            if (!Globals.isAllyPaintTower(paintTowerInfo)) {
+                System.out.println("Our paint tower got destroyed and changed to something else!");
+                paintTowerLoc = null;
+                yieldStrategy();
+                return;
+            }
+
+            // If we wouldn't start incurring penalty from the tower, move closer
+            var nextLoc = rc.getLocation().add(dir);
+            if (nextLoc.distanceSquaredTo(paintTowerLoc) > GameConstants.PAINT_TRANSFER_RADIUS_SQUARED) {
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                return;
+            }
+
+            var spaceToFill = Globals.paintCapacity - rc.getPaint();
+            if (paintTowerInfo.getPaintAmount() >= spaceToFill) {
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                if (rc.canTransferPaint(paintTowerLoc, -spaceToFill)) {
+                    rc.transferPaint(paintTowerLoc, -spaceToFill);
+                    yieldStrategy();
+                }
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "RefillPaintStrategy " + paintTowerLoc;
+        }
+
     }
 }

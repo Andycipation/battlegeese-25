@@ -1,4 +1,4 @@
-package template;
+package prod_v6;
 
 public class Logger extends Globals {
     private static StringBuilder sb = new StringBuilder();

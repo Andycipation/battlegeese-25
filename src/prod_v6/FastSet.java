@@ -1,4 +1,4 @@
-package prod_jan_19_9_pm;
+package prod_v6;
 
 import battlecode.common.*;
 

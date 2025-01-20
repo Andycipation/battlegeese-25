@@ -1,4 +1,6 @@
-package prod_jan_19_9_pm;
+package prod_v6;
+
+import org.apache.commons.lang3.NotImplementedException;
 
 import battlecode.common.*;
 
@@ -8,9 +10,79 @@ public class Tower extends Robot {
     public static int unitsBuilt = 0;
     public static CircularBuffer<MapLocation> sensedEmptyLocs = new CircularBuffer<MapLocation>(3);
     public static CircularBuffer<MapLocation> sensedEnemyLocs = new CircularBuffer<MapLocation>(3);
-    public static Comms towerToTowerComms = new Comms(new int[]{Comms.IDENTIFIER_SZ, GameConstants.MAX_NUMBER_OF_TOWERS, GameConstants.MAX_NUMBER_OF_TOWERS, Comms.MAP_ENCODE_SZ});
-    public static int emptyLevel = GameConstants.MAX_NUMBER_OF_TOWERS - 1;
-    public static int enemyLevel = GameConstants.MAX_NUMBER_OF_TOWERS - 1;
+    public static int UNDETECTED_LEVEL = 10;
+    public static int emptyLevel = UNDETECTED_LEVEL;
+    public static int enemyLevel = UNDETECTED_LEVEL;
+
+    private static class Letter {
+        int messageBytes, toId;
+        public Letter(int _messageBytes, int _toId) {
+            messageBytes = _messageBytes;
+            toId = _toId;
+        }
+    };
+
+    public void answerMessages() throws GameActionException {
+        final int TOWER_LETTER_LIMIT = 100;
+
+        int numLetters = 0;
+        Letter[] letters = new Letter[TOWER_LETTER_LIMIT];
+
+        // presses requests from last round
+        for (int i = lastRoundMessages.length; --i >= 0;) {
+            int messageBytes = lastRoundMessages[i].getBytes();
+            switch (Comms.getProtocol(messageBytes)) {
+                case TOWER_NETWORK_REQUEST:
+                    int[] decoded = Comms.towerNetworkRequestComms.decode(messageBytes);
+                    boolean moveForward = decoded[1] == 1;
+                    boolean enemyNetwork = decoded[2] == 1;
+                    int requestorId = decoded[3];
+                    CircularBuffer<MapLocation> buffer = (enemyNetwork ? sensedEnemyLocs : sensedEmptyLocs);
+                    int requestedLevel = (enemyNetwork ? enemyLevel : emptyLevel);
+                    if (moveForward) {
+                        int msg;
+                        if (requestedLevel == UNDETECTED_LEVEL || buffer.empty()) {
+                            msg = Comms.towerNetworkResponseComms.encode(new int[]{
+                                Comms.Protocal.TOWER_NETWORK_RESPONSE.ordinal(),
+                                0, // not successful
+                                0 // random value
+                            });
+                        }
+                        else {
+                            msg = Comms.towerNetworkResponseComms.encode(new int[]{
+                                Comms.Protocal.TOWER_NETWORK_RESPONSE.ordinal(),
+                                1, // successful
+                                Comms.encodeMapLocation(buffer.poll()) // next location in network
+                            });
+                        }
+                        if (numLetters < TOWER_LETTER_LIMIT)
+                            letters[numLetters++] = new Letter(msg, requestorId);
+                    }
+                    else {
+                        // NOT IMPLEMENTED YET...
+                    }
+                default:
+                    break;
+            }
+        }
+
+        // dispatch letters to send
+        FastMap<MapLocation> idToLoc = new FastMap<MapLocation>(TOWER_LETTER_LIMIT);
+        for (int i = nearbyAllyRobots.length; --i >= 0;) {
+            RobotInfo robot = nearbyAllyRobots[i];
+            idToLoc.add((char)robot.getID(), robot.getLocation());
+        }
+
+        for (int i = numLetters; --i >= 0;) {
+            Letter letter = letters[i];
+            int messageBytes = letter.messageBytes;
+            int toId = letter.toId;
+            MapLocation loc = idToLoc.get((char)toId);
+            if (loc != null && rc.canSendMessage(loc, messageBytes)) {
+                rc.sendMessage(loc, messageBytes);
+            }
+        }
+    }
     
     @Override
     void initTurn() throws GameActionException {
@@ -19,8 +91,8 @@ public class Tower extends Robot {
         if (roundNum % 10 == 0) { // reset sensed enemy/empty after some period of time
             sensedEmptyLocs.clear();
             sensedEnemyLocs.clear();
-            emptyLevel = GameConstants.MAX_NUMBER_OF_TOWERS - 1;
-            enemyLevel = GameConstants.MAX_NUMBER_OF_TOWERS - 1;
+            emptyLevel = UNDETECTED_LEVEL;
+            enemyLevel = UNDETECTED_LEVEL;
         }
 
         for (int i = nearbyMapInfos.length; --i >= 0; ) {
@@ -39,9 +111,9 @@ public class Tower extends Robot {
         for (int i = lastRoundMessages.length; --i >= 0; ) {
             int bytes = lastRoundMessages[i].getBytes();
             if (Comms.getProtocol(bytes) == Comms.Protocal.TOWER_TO_TOWER) {
-                int[] data = towerToTowerComms.decode(bytes);
-                int relaxEmptyLevel = Math.min(data[1] + 1, GameConstants.MAX_NUMBER_OF_TOWERS - 1);
-                int relaxEnemyLevel = Math.min(data[2] + 1, GameConstants.MAX_NUMBER_OF_TOWERS - 1);
+                int[] data = Comms.towerToTowerComms.decode(bytes);
+                int relaxEmptyLevel = Math.min(data[1] + 1, UNDETECTED_LEVEL);
+                int relaxEnemyLevel = Math.min(data[2] + 1, UNDETECTED_LEVEL);
                 MapLocation adjLoc = Comms.decodeMapLocation(data[3]);
                 if (relaxEmptyLevel < emptyLevel) {
                     sensedEmptyLocs.clear();
@@ -64,12 +136,13 @@ public class Tower extends Robot {
             rc.setIndicatorLine(locBeforeTurn, sensedEnemyLocs.poll(), 0, 255 - 30 * enemyLevel, 255 - 30 * enemyLevel);
         }
 
-        rc.broadcastMessage(towerToTowerComms.encode(
+        rc.broadcastMessage(Comms.towerToTowerComms.encode(
             new int[]{Comms.Protocal.TOWER_TO_TOWER.ordinal(),
                       emptyLevel,
                       enemyLevel,
                       Comms.encodeMapLocation(locBeforeTurn)}));
-        
+
+        answerMessages();
     }
 
     public static boolean tryBuildUnit(UnitType robotType) throws GameActionException {
@@ -106,7 +179,6 @@ public class Tower extends Robot {
     
     @Override
     void play() throws GameActionException {
-        // System.out.println("progress: " + getProgress());
 
         if (spawnStrat == null) {
             switch (mapCategory) {
