@@ -138,7 +138,8 @@ public class Soldier extends Unit {
         private boolean isRuinMostlyDone() throws GameActionException {
             int visible = 0;
             int done = 0;
-            for (var info : nearbyMapInfos) {
+            for (int i = nearbyMapInfos.length; --i >= 0;) {
+                var info = nearbyMapInfos[i];
                 if (ruinLoc.distanceSquaredTo(info.getMapLocation()) <= GameConstants.RESOURCE_PATTERN_RADIUS_SQUARED) {
                     visible += 1;
                     var expectedColor = getTowerPaintColor(ruinLoc, info.getMapLocation(), towerType);
