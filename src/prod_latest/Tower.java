@@ -7,45 +7,16 @@ public class Tower extends Robot {
     public static SpawnStrategy spawnStrat;
     public static int unitsBuilt = 0;
 
-    public static CommsStrategy commsStrat = new CommsStrategyV1();
-    public static final int TOWER_LETTER_LIMIT = 100;
-
-    private static class Letter {
-        int messageBytes, toId;
-        public Letter(int _messageBytes, int _toId) {
-            messageBytes = _messageBytes;
-            toId = _toId;
-        }
-    };
-
-    public void dispatchLetters(Letter[] letters) throws GameActionException {
-        int numLetters = letters.length;
-
-        // dispatch letters to send
-        FastMap<MapLocation> idToLoc = new FastMap<MapLocation>(TOWER_LETTER_LIMIT);
-        for (int i = nearbyAllyRobots.length; --i >= 0;) {
-            RobotInfo robot = nearbyAllyRobots[i];
-            idToLoc.add((char)robot.getID(), robot.getLocation());
-        }
-
-        for (int i = numLetters; --i >= 0;) {
-            Letter letter = letters[i];
-            int messageBytes = letter.messageBytes;
-            int toId = letter.toId;
-            MapLocation loc = idToLoc.get((char)toId);
-            if (loc != null && rc.canSendMessage(loc, messageBytes)) {
-                rc.sendMessage(loc, messageBytes);
-            }
-        }
-    }
+    public static CommsStrategy commsStrat = new CommsStrategyV2();
+    public static final int TOWER_LETTER_LIMIT = GameConstants.MAX_MESSAGES_SENT_TOWER;
     
     @Override
     void initTurn() throws GameActionException {
         super.initTurn();
 
         commsStrat.receiveAndBroadcast();
-        Letter[] letters = commsStrat.prepareLetters();
-        dispatchLetters(letters);
+        // Letter[] letters = commsStrat.prepareLetters();
+        // dispatchLetters(letters);
     }
 
     public static boolean tryBuildUnit(UnitType robotType) throws GameActionException {
@@ -98,7 +69,6 @@ public class Tower extends Robot {
 
     static abstract class CommsStrategy extends Tower {
         abstract public void receiveAndBroadcast() throws GameActionException;
-        abstract public Letter[] prepareLetters() throws GameActionException;
     }
 
     static class CommsStrategyV1 extends CommsStrategy {
@@ -108,6 +78,13 @@ public class Tower extends Robot {
         public static int UNDETECTED_LEVEL = 10;
         public static int emptyLevel = UNDETECTED_LEVEL;
         public static int enemyLevel = UNDETECTED_LEVEL;
+        private static class Letter {
+            int messageBytes, toId;
+            public Letter(int _messageBytes, int _toId) {
+                messageBytes = _messageBytes;
+                toId = _toId;
+            }
+        };
 
         @Override
         public void receiveAndBroadcast() throws GameActionException {
@@ -121,6 +98,7 @@ public class Tower extends Robot {
             for (int i = nearbyMapInfos.length; --i >= 0; ) {
                 MapInfo tile = nearbyMapInfos[i];
                 MapLocation loc = tile.getMapLocation();
+                if (!tile.isPassable()) continue;
                 if (tile.getPaint() == PaintType.EMPTY) {
                     sensedEmptyLocs.push(loc);
                     emptyLevel = 0;
@@ -164,9 +142,10 @@ public class Tower extends Robot {
                           emptyLevel,
                           enemyLevel,
                           Comms.encodeMapLocation(locBeforeTurn)}));
+
+            dispatchLetters(prepareLetters());
         }
 
-        @Override
         public Letter[] prepareLetters() throws GameActionException {
             int numLetters = 0;
             Letter[] lettersBuf = new Letter[TOWER_LETTER_LIMIT];
@@ -209,27 +188,146 @@ public class Tower extends Robot {
                 }
             }
 
-            Letter[] letters = new Letter[numLetters];
-            for (int i = numLetters; --i >= 0;) {
-                letters[i] = lettersBuf[i];
-            }
-            return letters;
+            return lettersBuf;
         }
 
+        public void dispatchLetters(Letter[] letters) throws GameActionException {
+            int numLetters = letters.length;
+    
+            // dispatch letters to send
+            FastMap<MapLocation> idToLoc = new FastMap<MapLocation>(100);
+            for (int i = nearbyAllyRobots.length; --i >= 0;) {
+                RobotInfo robot = nearbyAllyRobots[i];
+                idToLoc.add((char)robot.getID(), robot.getLocation());
+            }
+    
+            for (int i = numLetters; --i >= 0;) {
+                Letter letter = letters[i];
+                if (letter == null) continue;
+                int messageBytes = letter.messageBytes;
+                int toId = letter.toId;
+                MapLocation loc = idToLoc.get((char)toId);
+                if (loc != null && rc.canSendMessage(loc, messageBytes)) {
+                    rc.sendMessage(loc, messageBytes);
+                }
+            }
+        }
     }
 
     static class CommsStrategyV2 extends CommsStrategy {
 
-        @Override
-        public void receiveAndBroadcast() throws GameActionException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'receiveAndBroadcast'");
+        public static MapLocation emptyLoc = null;
+        public static int emptyLocTimestamp = -1;
+        public static MapLocation enemyLoc = null;
+        public static int enemyLocTimestamp = -1;
+
+        public static boolean chkEmptyLoc(MapLocation loc, int timestamp) {
+            if (timestamp > emptyLocTimestamp) {
+                emptyLoc = loc;
+                emptyLocTimestamp = timestamp;
+                return true;
+            }
+            return false;
+        }
+        public static boolean chkEnemyLoc(MapLocation loc, int timestamp) {
+            if (timestamp > enemyLocTimestamp) {
+                enemyLoc = loc;
+                enemyLocTimestamp = timestamp;
+                return true;
+            }
+            return false;
         }
 
         @Override
-        public Letter[] prepareLetters() throws GameActionException {
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'prepareLetters'");
+        public void receiveAndBroadcast() throws GameActionException {
+
+            // process informs from last round
+            for (int i = lastRoundMessages.length; --i >= 0;) {
+                int messageBytes = lastRoundMessages[i].getBytes();
+                switch (Comms.getProtocol(messageBytes)) {
+                    case TOWER_NETWORK_INFORM: {
+                        int[] decoded = Comms.towerNetworkInformComms.decode(messageBytes);
+                        boolean enemyNetwork = decoded[1] == 1;
+                        int timestamp = decoded[2];
+                        MapLocation loc = Comms.decodeMapLocation(decoded[3]);
+                        if (enemyNetwork) chkEnemyLoc(loc, timestamp);
+                        else chkEmptyLoc(loc, timestamp);
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+    
+            for (int i = nearbyMapInfos.length; --i >= 0; ) {
+                MapInfo tile = nearbyMapInfos[i];
+                MapLocation loc = tile.getMapLocation();
+                if (!tile.isPassable()) continue;
+                if (tile.getPaint() == PaintType.EMPTY) {
+                    chkEmptyLoc(loc, roundNum);
+                }
+                if (tile.getPaint().isEnemy()) {
+                    chkEnemyLoc(loc, roundNum);
+                }
+            }
+            
+            for (int i = lastRoundMessages.length; --i >= 0; ) {
+                int bytes = lastRoundMessages[i].getBytes();
+                if (Comms.getProtocol(bytes) == Comms.Protocal.TOWER_TO_TOWER_V2) {
+                    int[] data = Comms.towerToTowerCommsV2.decode(bytes);
+                    int network = data[1];
+                    int timestamp = data[2];
+                    MapLocation loc = Comms.decodeMapLocation(data[3]);
+                    if (network == 0) chkEmptyLoc(loc, timestamp);
+                    else chkEnemyLoc(loc, timestamp);
+                }
+            }
+            if (emptyLoc != null) {
+                Logger.log("next empty: " + emptyLoc);
+                rc.setIndicatorLine(locBeforeTurn, emptyLoc, 0, 0, 255);
+            }
+            if (enemyLoc != null) {
+                Logger.log("next enemy: " + enemyLoc);
+                rc.setIndicatorLine(locBeforeTurn, enemyLoc, 255, 0, 0);
+            }
+    
+            { // send message to turrets
+                int network = roundNum % 2;
+                MapLocation transmitLoc = (network == 0 ? emptyLoc : enemyLoc);
+                int transmitTimestamp = (network == 0 ? emptyLocTimestamp : enemyLocTimestamp);
+                if (transmitLoc != null) {
+                    rc.broadcastMessage(Comms.towerToTowerCommsV2.encode(
+                        new int[]{Comms.Protocal.TOWER_TO_TOWER_V2.ordinal(),
+                                    network,
+                                    transmitTimestamp,
+                                    Comms.encodeMapLocation(transmitLoc)}));
+                }
+            }
+
+            { // send message to units
+                int numLetters = 0;
+                int network = roundNum % 2;
+                MapLocation transmitLoc = (network == 0 ? emptyLoc : enemyLoc);
+                int transmitTimestamp = (network == 0 ? emptyLocTimestamp : enemyLocTimestamp);
+                if (transmitLoc != null) {
+                    for (int i = nearbyAllyRobots.length; --i >= 0;) {
+                        RobotInfo robot = nearbyAllyRobots[i];
+                        if (robot.getType().isTowerType()) continue;
+                        MapLocation loc = robot.location;
+                        int msg = Comms.towerNetworkInformComms.encode(new int[]{
+                            Comms.Protocal.TOWER_NETWORK_INFORM.ordinal(),
+                            network,
+                            transmitTimestamp, // enemy network
+                            Comms.encodeMapLocation(transmitLoc)
+                        });
+                        if (numLetters < TOWER_LETTER_LIMIT-1 && rc.canSendMessage(loc)) {
+                            numLetters++;
+                            rc.sendMessage(loc, msg);
+                        }
+                        if (numLetters == TOWER_LETTER_LIMIT-1) break;
+                    }
+                }
+            }
         }
 
     }

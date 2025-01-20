@@ -3,7 +3,30 @@ package prod_latest;
 import battlecode.common.*;
 
 public abstract class Unit extends Robot {
-    static MapLocation paintTowerLoc;
+
+    static public MapLocation paintTowerLoc;
+
+    static public MapLocation informedEnemyPaintLoc = null;
+    static public int informedEnemyPaintLocTimestamp = -1;
+    static public MapLocation informedEmptyPaintLoc = null;
+    static public int informedEmptyPaintLocTimestamp = -1;
+
+    public static boolean chkEmptyLoc(MapLocation loc, int timestamp) {
+        if (timestamp > informedEmptyPaintLocTimestamp) {
+            informedEmptyPaintLoc = loc;
+            informedEmptyPaintLocTimestamp = timestamp;
+            return true;
+        }
+        return false;
+    }
+    public static boolean chkEnemyLoc(MapLocation loc, int timestamp) {
+        if (timestamp > informedEnemyPaintLocTimestamp) {
+            informedEnemyPaintLoc = loc;
+            informedEnemyPaintLocTimestamp = timestamp;
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Perform actions at the beginning of the robot's turn.
@@ -16,6 +39,43 @@ public abstract class Unit extends Robot {
             if (Globals.isAllyPaintTower(info)) {
                 paintTowerLoc = info.location;
             }
+        }
+
+        for (int i = nearbyMapInfos.length; --i >= 0;) {
+            MapInfo tile = nearbyMapInfos[i];
+            if (!tile.isPassable()) continue;
+            MapLocation loc = tile.getMapLocation();
+            if (tile.getPaint().isEnemy()) {
+                informedEnemyPaintLoc = loc;
+                informedEnemyPaintLocTimestamp = roundNum;
+            } else if (tile.getPaint() == PaintType.EMPTY) {
+                informedEmptyPaintLoc = loc;
+                informedEmptyPaintLocTimestamp = roundNum;
+            }
+        }
+
+        for (int i = lastRoundMessages.length; --i >= 0;) {
+            int messageBytes = lastRoundMessages[i].getBytes();
+            switch (Comms.getProtocol(messageBytes)) {
+                case TOWER_NETWORK_INFORM: {
+                    int[] decoded = Comms.towerNetworkInformComms.decode(messageBytes);
+                    boolean enemyNetwork = decoded[1] == 1;
+                    int timestamp = decoded[2];
+                    MapLocation loc = Comms.decodeMapLocation(decoded[3]);
+                    if (enemyNetwork) chkEnemyLoc(loc, timestamp);
+                    else chkEmptyLoc(loc, timestamp);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+
+        if (informedEnemyPaintLoc != null) {
+            rc.setIndicatorLine(locBeforeTurn, informedEnemyPaintLoc, 255, 150, 150);
+        }
+        if (informedEmptyPaintLoc != null) {
+            // rc.setIndicatorLine(locBeforeTurn, informedEmptyPaintLoc, 150, 150, 255);
         }
 
     }
@@ -34,6 +94,36 @@ public abstract class Unit extends Robot {
      */
     void endTurn() throws GameActionException {
         super.endTurn();
+
+        int networkToSend = -1;
+        if (informedEnemyPaintLoc == null && informedEmptyPaintLoc == null) {}
+        else if (informedEnemyPaintLoc != null && informedEmptyPaintLoc == null) {
+            networkToSend = 1;
+        } else if (informedEnemyPaintLoc == null && informedEmptyPaintLoc != null) {
+            networkToSend = 0;
+        } else {
+            networkToSend = rng.nextInt(2);
+        }
+        MapLocation msgRecipient = null;
+        for (int i = nearbyAllyRobots.length; --i >= 0;) {
+            RobotInfo robotInfo = nearbyAllyRobots[i];
+            MapLocation loc = robotInfo.location;
+            if (robotInfo.getType().isTowerType() && rc.canSendMessage(loc)) {
+                msgRecipient = robotInfo.location;
+                break;
+            }
+        }
+        if (networkToSend != -1 && msgRecipient != null) {
+            MapLocation informLoc = (networkToSend == 1 ? informedEnemyPaintLoc : informedEmptyPaintLoc);
+            int timestamp = (networkToSend == 1 ? informedEnemyPaintLocTimestamp : informedEmptyPaintLocTimestamp);
+            int msg = Comms.towerNetworkInformComms.encode(new int[]{
+                Comms.Protocal.TOWER_NETWORK_INFORM.ordinal(),
+                networkToSend,
+                timestamp,
+                Comms.encodeMapLocation(informLoc)
+            });
+            rc.sendMessage(msgRecipient, msg);
+        }
     }
 
     void upgradeTowers() throws GameActionException {

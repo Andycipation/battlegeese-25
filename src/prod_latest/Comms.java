@@ -14,6 +14,7 @@ public class Comms {
         TOWER_TO_TOWER_V2,
         TOWER_NETWORK_REQUEST,
         TOWER_NETWORK_RESPONSE,
+        TOWER_NETWORK_INFORM,
     };
     public static Comms towerToTowerCommsV1 = new Comms(new int[]{
         Comms.IDENTIFIER_SZ, // protocol id
@@ -21,7 +22,7 @@ public class Comms {
         Tower.CommsStrategyV1.UNDETECTED_LEVEL + 1, // enemyness network level
         Comms.MAP_ENCODE_SZ // transmitter location
     });
-    public static Comms towerToTowersCommsV2 = new Comms(new int[]{
+    public static Comms towerToTowerCommsV2 = new Comms(new int[]{
         Comms.IDENTIFIER_SZ, // protocol id
         Comms.BIT_SZ, // which network (1 for enemy network, 0 for empty network)
         Comms.ROUND_NUM_SZ, // round number the information came from
@@ -37,6 +38,12 @@ public class Comms {
         Comms.IDENTIFIER_SZ, // protocol id
         Comms.BIT_SZ, // successful?
         Comms.MAP_ENCODE_SZ, // returned location
+    });
+    public static Comms towerNetworkInformComms = new Comms(new int[]{
+        Comms.IDENTIFIER_SZ, // protocol id
+        Comms.BIT_SZ, // which network (1 for enemy network, 0 for empty network)
+        Comms.ROUND_NUM_SZ, // round number the information came from
+        Comms.MAP_ENCODE_SZ, // informed location
     });
     
     public static Protocal getProtocol(int msg) {
