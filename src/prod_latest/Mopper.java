@@ -212,4 +212,17 @@ public class Mopper extends Unit {
             return "Explore " + turnsLeft + " " + target;
         }
     }
+
+    static class FollowStrategy extends MopperStrategy {
+        FollowStrategy() {
+        }
+
+        public void act() throws GameActionException {
+
+        }
+
+        public String toString () {
+            return "Following enemy";
+        }
+    }
 }
