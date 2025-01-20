@@ -5,6 +5,8 @@ import battlecode.common.*;
 public class Splasher extends Unit {
 
     public static SplasherStrategy strategy;
+    public static boolean useNetwork = rng.nextInt(2) == 0;
+    
 
     public static void switchStrategy(SplasherStrategy newStrategy) {
         strategy = newStrategy;
@@ -63,7 +65,7 @@ public class Splasher extends Unit {
             
         }
 
-        public String toStrign() {
+        public String toString() {
             return "Aggro";
         }
     }
@@ -89,6 +91,15 @@ public class Splasher extends Unit {
                     return;
                 }
             }
+
+            if (useNetwork) {
+                for (int i = nearbyAllyRobots.length; --i >= 0;) {
+                    RobotInfo robot = nearbyAllyRobots[i];
+                    if (robot.getType().isTowerType()) {
+                        switchStrategy(new PathTowardsEnemyStrategy(robot.getLocation()));
+                    }
+                }
+            }
     
             BugNav.moveToward(target);
             if (rc.getLocation() == locBeforeTurn) {
@@ -111,4 +122,61 @@ public class Splasher extends Unit {
         }
     }
     
+    static class PathTowardsEnemyStrategy extends SplasherStrategy {
+
+        MapLocation curTarget;
+        int failedMessages = 0;
+
+        PathTowardsEnemyStrategy(MapLocation linkedTower) {
+            curTarget = linkedTower;
+        }
+
+        @Override
+        public void act() throws GameActionException {
+            // if (failedMessages >= 10) {
+            //     useNetwork = false;
+            //     yieldStrategy();
+            // }
+
+            for (int i = lastRoundMessages.length; --i >= 0;) {
+                int message = lastRoundMessages[i].getBytes();
+                if (Comms.getProtocol(message) == Comms.Protocal.TOWER_NETWORK_RESPONSE) {
+                    int[] decoded = Comms.towerNetworkResponseComms.decode(message);
+                    boolean successful = decoded[1] == 1;
+                    MapLocation newTarget = Comms.decodeMapLocation(decoded[2]);
+                    if (successful) {
+                        curTarget = newTarget;
+                        failedMessages = 0;
+                    }
+                    else failedMessages++;
+                }
+            }
+
+            for (int i = nearbyMapInfos.length; --i >= 0;) {
+                MapInfo tile = nearbyMapInfos[i];
+                if (tile.getPaint().isEnemy()) {
+                    switchStrategy(new AggroStrategy());
+                    return;
+                }
+            }
+
+            BugNav.moveToward(curTarget);
+
+            int messageContent = Comms.towerNetworkRequestComms.encode(new int[]{
+                Comms.Protocal.TOWER_NETWORK_REQUEST.ordinal(),
+                1, // move forward
+                1, // enemy network
+                id
+            });
+            if (rc.canSenseLocation(curTarget) && rc.senseRobotAtLocation(curTarget) != null && rc.canSendMessage(curTarget)) {
+                rc.sendMessage(curTarget, messageContent);
+            }
+            rc.setIndicatorLine(rc.getLocation(), curTarget, 0, 255, 0);
+        }
+
+        public String toString() {
+            return "path towards enemy " + curTarget; 
+        }
+
+    }
 }
