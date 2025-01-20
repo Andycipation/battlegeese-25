@@ -7,14 +7,36 @@ public class Comms {
      * THE FIRST FIELD OF ANY MESSAGE MUST SPECIFY THE PROTOCAL WE ARE ON
      */
     final public static int IDENTIFIER_SZ = 16;
-
+    
     // to get index of specific Protocal p, use p.ordinal()
     public enum Protocal {
-        TOWER_TO_TOWER
+        TOWER_TO_TOWER,
+        TOWER_NETWORK_REQUEST,
+        TOWER_NETWORK_RESPONSE,
     };
+    public static Comms towerToTowerComms = new Comms(new int[]{
+        Comms.IDENTIFIER_SZ, // protocol id
+        GameConstants.MAX_NUMBER_OF_TOWERS, // emptyness network level
+        GameConstants.MAX_NUMBER_OF_TOWERS, // enemyness network level
+        Comms.MAP_ENCODE_SZ // transmitter location
+    });
+    public static Comms towerNetworkRequestComms = new Comms(new int[]{
+        Comms.IDENTIFIER_SZ, // protocol id
+        Comms.BIT_SZ, // move direction (1 for forward, 0 for backward)
+        Comms.BIT_SZ, // which network (1 for enemy network, 0 for empty network)
+        Comms.ID_SZ // requestor ID
+    });
+    public static Comms towerNetworkResponseComms = new Comms(new int[]{
+        Comms.IDENTIFIER_SZ, // protocol id
+        Comms.BIT_SZ, // successful?
+        Comms.MAP_ENCODE_SZ, // returned location
+    });
+    
     public static Protocal getProtocol(int msg) {
         return Protocal.values()[msg % IDENTIFIER_SZ];
     }
+
+    final public static int BIT_SZ = 2;
 
     public int n;
     public int lims[];
@@ -41,6 +63,7 @@ public class Comms {
         return ret;
     }
 
+    final public static int ID_SZ = (1 << 16);
     final public static int MAP_ENCODE_SZ = 3600;
     public static int encodeMapLocation(MapLocation loc) {
         return 60 * loc.x + loc.y;

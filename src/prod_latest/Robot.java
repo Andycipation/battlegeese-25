@@ -10,7 +10,7 @@ public abstract class Robot extends Globals {
     public static MapLocation locBeforeTurn;
     public static int numTowers;
     public static int roundNum;
-    Message[] lastRoundMessages;
+    static Message[] lastRoundMessages;
     // numAllyAdjacent is indexed by the same was as Direction.getDirectionOrderNum
     public static int[] numAllyAdjacent;
 
