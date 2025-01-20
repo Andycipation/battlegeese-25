@@ -1,18 +1,14 @@
 package prod_latest;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import battlecode.common.*;
 
 public class Tower extends Robot {
 
     public static SpawnStrategy spawnStrat;
     public static int unitsBuilt = 0;
-    public static CircularBuffer<MapLocation> sensedEmptyLocs = new CircularBuffer<MapLocation>(3);
-    public static CircularBuffer<MapLocation> sensedEnemyLocs = new CircularBuffer<MapLocation>(3);
-    public static int UNDETECTED_LEVEL = 10;
-    public static int emptyLevel = UNDETECTED_LEVEL;
-    public static int enemyLevel = UNDETECTED_LEVEL;
+
+    public static CommsStrategy commsStrat = new CommsStrategyV1();
+    public static final int TOWER_LETTER_LIMIT = 100;
 
     private static class Letter {
         int messageBytes, toId;
@@ -22,49 +18,8 @@ public class Tower extends Robot {
         }
     };
 
-    public void answerMessages() throws GameActionException {
-        final int TOWER_LETTER_LIMIT = 100;
-
-        int numLetters = 0;
-        Letter[] letters = new Letter[TOWER_LETTER_LIMIT];
-
-        // presses requests from last round
-        for (int i = lastRoundMessages.length; --i >= 0;) {
-            int messageBytes = lastRoundMessages[i].getBytes();
-            switch (Comms.getProtocol(messageBytes)) {
-                case TOWER_NETWORK_REQUEST:
-                    int[] decoded = Comms.towerNetworkRequestComms.decode(messageBytes);
-                    boolean moveForward = decoded[1] == 1;
-                    boolean enemyNetwork = decoded[2] == 1;
-                    int requestorId = decoded[3];
-                    CircularBuffer<MapLocation> buffer = (enemyNetwork ? sensedEnemyLocs : sensedEmptyLocs);
-                    int requestedLevel = (enemyNetwork ? enemyLevel : emptyLevel);
-                    if (moveForward) {
-                        int msg;
-                        if (requestedLevel == UNDETECTED_LEVEL || buffer.empty()) {
-                            msg = Comms.towerNetworkResponseComms.encode(new int[]{
-                                Comms.Protocal.TOWER_NETWORK_RESPONSE.ordinal(),
-                                0, // not successful
-                                0 // random value
-                            });
-                        }
-                        else {
-                            msg = Comms.towerNetworkResponseComms.encode(new int[]{
-                                Comms.Protocal.TOWER_NETWORK_RESPONSE.ordinal(),
-                                1, // successful
-                                Comms.encodeMapLocation(buffer.poll()) // next location in network
-                            });
-                        }
-                        if (numLetters < TOWER_LETTER_LIMIT)
-                            letters[numLetters++] = new Letter(msg, requestorId);
-                    }
-                    else {
-                        // NOT IMPLEMENTED YET...
-                    }
-                default:
-                    break;
-            }
-        }
+    public void dispatchLetters(Letter[] letters) throws GameActionException {
+        int numLetters = letters.length;
 
         // dispatch letters to send
         FastMap<MapLocation> idToLoc = new FastMap<MapLocation>(TOWER_LETTER_LIMIT);
@@ -88,61 +43,9 @@ public class Tower extends Robot {
     void initTurn() throws GameActionException {
         super.initTurn();
 
-        if (roundNum % 10 == 0) { // reset sensed enemy/empty after some period of time
-            sensedEmptyLocs.clear();
-            sensedEnemyLocs.clear();
-            emptyLevel = UNDETECTED_LEVEL;
-            enemyLevel = UNDETECTED_LEVEL;
-        }
-
-        for (int i = nearbyMapInfos.length; --i >= 0; ) {
-            MapInfo tile = nearbyMapInfos[i];
-            MapLocation loc = tile.getMapLocation();
-            if (tile.getPaint() == PaintType.EMPTY) {
-                sensedEmptyLocs.push(loc);
-                emptyLevel = 0;
-            }
-            if (tile.getPaint().isEnemy()) {
-                sensedEnemyLocs.push(loc);
-                enemyLevel = 0;
-            }
-        }
-        
-        for (int i = lastRoundMessages.length; --i >= 0; ) {
-            int bytes = lastRoundMessages[i].getBytes();
-            if (Comms.getProtocol(bytes) == Comms.Protocal.TOWER_TO_TOWER) {
-                int[] data = Comms.towerToTowerComms.decode(bytes);
-                int relaxEmptyLevel = Math.min(data[1] + 1, UNDETECTED_LEVEL);
-                int relaxEnemyLevel = Math.min(data[2] + 1, UNDETECTED_LEVEL);
-                MapLocation adjLoc = Comms.decodeMapLocation(data[3]);
-                if (relaxEmptyLevel < emptyLevel) {
-                    sensedEmptyLocs.clear();
-                    emptyLevel = relaxEmptyLevel;
-                }
-                if (relaxEnemyLevel < enemyLevel) {
-                    sensedEnemyLocs.clear();
-                    enemyLevel = relaxEnemyLevel;
-                }
-                if (relaxEmptyLevel == emptyLevel) sensedEmptyLocs.push(adjLoc);
-                if (relaxEnemyLevel == enemyLevel) sensedEnemyLocs.push(adjLoc);
-            }
-        }
-        if (!sensedEmptyLocs.empty()) {
-            Logger.log("next empty: " + sensedEmptyLocs.poll());
-            // rc.setIndicatorLine(locBeforeTurn, sensedEmptyLocs.poll(), 0, 255, 255);
-        }
-        if (!sensedEnemyLocs.empty()) {
-            Logger.log("next enemy: " + sensedEnemyLocs.poll());
-            rc.setIndicatorLine(locBeforeTurn, sensedEnemyLocs.poll(), 0, 255 - 30 * enemyLevel, 255 - 30 * enemyLevel);
-        }
-
-        rc.broadcastMessage(Comms.towerToTowerComms.encode(
-            new int[]{Comms.Protocal.TOWER_TO_TOWER.ordinal(),
-                      emptyLevel,
-                      enemyLevel,
-                      Comms.encodeMapLocation(locBeforeTurn)}));
-
-        answerMessages();
+        commsStrat.receiveAndBroadcast();
+        Letter[] letters = commsStrat.prepareLetters();
+        dispatchLetters(letters);
     }
 
     public static boolean tryBuildUnit(UnitType robotType) throws GameActionException {
@@ -190,6 +93,144 @@ public class Tower extends Robot {
 
         playSpawnUnits();
         playAttack();
+
+    }
+
+    static abstract class CommsStrategy extends Tower {
+        abstract public void receiveAndBroadcast() throws GameActionException;
+        abstract public Letter[] prepareLetters() throws GameActionException;
+    }
+
+    static class CommsStrategyV1 extends CommsStrategy {
+
+        public static CircularBuffer<MapLocation> sensedEmptyLocs = new CircularBuffer<MapLocation>(3);
+        public static CircularBuffer<MapLocation> sensedEnemyLocs = new CircularBuffer<MapLocation>(3);
+        public static int UNDETECTED_LEVEL = 10;
+        public static int emptyLevel = UNDETECTED_LEVEL;
+        public static int enemyLevel = UNDETECTED_LEVEL;
+
+        @Override
+        public void receiveAndBroadcast() throws GameActionException {
+            if (roundNum % 10 == 0) { // reset sensed enemy/empty after some period of time
+                // sensedEmptyLocs.clear();
+                // sensedEnemyLocs.clear();
+                emptyLevel++; // raise my level a bit
+                enemyLevel++; // raise my level a bit
+            }
+    
+            for (int i = nearbyMapInfos.length; --i >= 0; ) {
+                MapInfo tile = nearbyMapInfos[i];
+                MapLocation loc = tile.getMapLocation();
+                if (tile.getPaint() == PaintType.EMPTY) {
+                    sensedEmptyLocs.push(loc);
+                    emptyLevel = 0;
+                }
+                if (tile.getPaint().isEnemy()) {
+                    sensedEnemyLocs.push(loc);
+                    enemyLevel = 0;
+                }
+            }
+            
+            for (int i = lastRoundMessages.length; --i >= 0; ) {
+                int bytes = lastRoundMessages[i].getBytes();
+                if (Comms.getProtocol(bytes) == Comms.Protocal.TOWER_TO_TOWER_V1) {
+                    int[] data = Comms.towerToTowerCommsV1.decode(bytes);
+                    int relaxEmptyLevel = Math.min(data[1] + 1, UNDETECTED_LEVEL);
+                    int relaxEnemyLevel = Math.min(data[2] + 1, UNDETECTED_LEVEL);
+                    MapLocation adjLoc = Comms.decodeMapLocation(data[3]);
+                    if (relaxEmptyLevel < emptyLevel) {
+                        sensedEmptyLocs.clear();
+                        emptyLevel = relaxEmptyLevel;
+                    }
+                    if (relaxEnemyLevel < enemyLevel) {
+                        sensedEnemyLocs.clear();
+                        enemyLevel = relaxEnemyLevel;
+                    }
+                    if (relaxEmptyLevel == emptyLevel) sensedEmptyLocs.push(adjLoc);
+                    if (relaxEnemyLevel == enemyLevel) sensedEnemyLocs.push(adjLoc);
+                }
+            }
+            if (!sensedEmptyLocs.empty()) {
+                Logger.log("next empty: " + sensedEmptyLocs.poll());
+                // rc.setIndicatorLine(locBeforeTurn, sensedEmptyLocs.poll(), 0, 255, 255);
+            }
+            if (!sensedEnemyLocs.empty()) {
+                Logger.log("next enemy: " + sensedEnemyLocs.poll());
+                rc.setIndicatorLine(locBeforeTurn, sensedEnemyLocs.poll(), 0, 255 - 30 * enemyLevel, 255 - 30 * enemyLevel);
+            }
+    
+            rc.broadcastMessage(Comms.towerToTowerCommsV1.encode(
+                new int[]{Comms.Protocal.TOWER_TO_TOWER_V1.ordinal(),
+                          emptyLevel,
+                          enemyLevel,
+                          Comms.encodeMapLocation(locBeforeTurn)}));
+        }
+
+        @Override
+        public Letter[] prepareLetters() throws GameActionException {
+            int numLetters = 0;
+            Letter[] lettersBuf = new Letter[TOWER_LETTER_LIMIT];
+    
+            // process requests from last round
+            for (int i = lastRoundMessages.length; --i >= 0;) {
+                int messageBytes = lastRoundMessages[i].getBytes();
+                switch (Comms.getProtocol(messageBytes)) {
+                    case TOWER_NETWORK_REQUEST:
+                        int[] decoded = Comms.towerNetworkRequestComms.decode(messageBytes);
+                        boolean moveForward = decoded[1] == 1;
+                        boolean enemyNetwork = decoded[2] == 1;
+                        int requestorId = decoded[3];
+                        CircularBuffer<MapLocation> buffer = (enemyNetwork ? sensedEnemyLocs : sensedEmptyLocs);
+                        int requestedLevel = (enemyNetwork ? enemyLevel : emptyLevel);
+                        if (moveForward) {
+                            int msg;
+                            if (requestedLevel == UNDETECTED_LEVEL || buffer.empty()) {
+                                msg = Comms.towerNetworkResponseComms.encode(new int[]{
+                                    Comms.Protocal.TOWER_NETWORK_RESPONSE.ordinal(),
+                                    0, // not successful
+                                    0 // random value
+                                });
+                            }
+                            else {
+                                msg = Comms.towerNetworkResponseComms.encode(new int[]{
+                                    Comms.Protocal.TOWER_NETWORK_RESPONSE.ordinal(),
+                                    1, // successful
+                                    Comms.encodeMapLocation(buffer.poll()) // next location in network
+                                });
+                            }
+                            if (numLetters < TOWER_LETTER_LIMIT)
+                                lettersBuf[numLetters++] = new Letter(msg, requestorId);
+                        }
+                        else {
+                            // NOT IMPLEMENTED YET...
+                        }
+                    default:
+                        break;
+                }
+            }
+
+            Letter[] letters = new Letter[numLetters];
+            for (int i = numLetters; --i >= 0;) {
+                letters[i] = lettersBuf[i];
+            }
+            return letters;
+        }
+
+    }
+
+    static class CommsStrategyV2 extends CommsStrategy {
+
+        @Override
+        public void receiveAndBroadcast() throws GameActionException {
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Unimplemented method 'receiveAndBroadcast'");
+        }
+
+        @Override
+        public Letter[] prepareLetters() throws GameActionException {
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Unimplemented method 'prepareLetters'");
+        }
 
     }
 

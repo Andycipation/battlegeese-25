@@ -10,15 +10,22 @@ public class Comms {
     
     // to get index of specific Protocal p, use p.ordinal()
     public enum Protocal {
-        TOWER_TO_TOWER,
+        TOWER_TO_TOWER_V1,
+        TOWER_TO_TOWER_V2,
         TOWER_NETWORK_REQUEST,
         TOWER_NETWORK_RESPONSE,
     };
-    public static Comms towerToTowerComms = new Comms(new int[]{
+    public static Comms towerToTowerCommsV1 = new Comms(new int[]{
         Comms.IDENTIFIER_SZ, // protocol id
-        GameConstants.MAX_NUMBER_OF_TOWERS, // emptyness network level
-        GameConstants.MAX_NUMBER_OF_TOWERS, // enemyness network level
+        Tower.CommsStrategyV1.UNDETECTED_LEVEL + 1, // emptyness network level
+        Tower.CommsStrategyV1.UNDETECTED_LEVEL + 1, // enemyness network level
         Comms.MAP_ENCODE_SZ // transmitter location
+    });
+    public static Comms towerToTowersCommsV2 = new Comms(new int[]{
+        Comms.IDENTIFIER_SZ, // protocol id
+        Comms.BIT_SZ, // which network (1 for enemy network, 0 for empty network)
+        Comms.ROUND_NUM_SZ, // round number the information came from
+        Comms.MAP_ENCODE_SZ // returned location
     });
     public static Comms towerNetworkRequestComms = new Comms(new int[]{
         Comms.IDENTIFIER_SZ, // protocol id
@@ -37,6 +44,7 @@ public class Comms {
     }
 
     final public static int BIT_SZ = 2;
+    final public static int ROUND_NUM_SZ = 2001;
 
     public int n;
     public int lims[];

@@ -11,11 +11,13 @@ public abstract class Unit extends Robot {
      */
     void initTurn() throws GameActionException {
         super.initTurn();
-        for (var info : nearbyAllyRobots) {
+        for (int i = nearbyAllyRobots.length; --i >= 0;) {
+            var info = nearbyAllyRobots[i];
             if (Globals.isAllyPaintTower(info)) {
                 paintTowerLoc = info.location;
             }
         }
+
     }
 
     /**
@@ -31,11 +33,12 @@ public abstract class Unit extends Robot {
      * span across several turns.
      */
     void endTurn() throws GameActionException {
-        super.initTurn();
+        super.endTurn();
     }
 
     void upgradeTowers() throws GameActionException {
-        for (RobotInfo robotInfo : nearbyAllyRobots) {
+        for (int i = nearbyAllyRobots.length; --i >= 0;)  {
+            RobotInfo robotInfo = nearbyAllyRobots[i];
             if (robotInfo.type.canUpgradeType()) {
                 if (rc.canUpgradeTower(robotInfo.location)) {
                     rc.upgradeTower(robotInfo.location);

@@ -204,7 +204,8 @@ public class Soldier extends Unit {
             // If there is already a robot next to the ruin and it's mostly finished, we go explore somewhere else instead
             boolean mostlyDone = isRuinMostlyDone();
             if (mostlyDone) {
-                for (var robot : nearbyAllyRobots) {
+                for (int i = nearbyAllyRobots.length; --i >= 0;) {
+                    var robot = nearbyAllyRobots[i];
                     if (robot.type == UnitType.SOLDIER && robot.location.isAdjacentTo(ruinLoc)) {
                         yieldStrategy(false);
                         return;
@@ -556,7 +557,8 @@ public class Soldier extends Unit {
         int trolledLocIdx = 0;
 
         boolean trolledBefore(MapLocation loc) {
-            for (MapLocation trolledLoc : trolledLocs) {
+            for (int i = trolledLocs.length; --i >= 0;) { 
+                MapLocation trolledLoc = trolledLocs[i];
                 if (trolledLoc != null && trolledLoc.equals(loc)) return true;
             }
             return false;
