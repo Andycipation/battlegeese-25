@@ -84,7 +84,6 @@ public class Mopper extends Unit {
             turnsWithNothingToMop = 0;
         }
 
-
         // Assumes robot is spinning around ruin and returns true if there is something adjacent to mop
         public boolean mop_nearby() throws GameActionException {
             boolean ret = false;
@@ -107,10 +106,20 @@ public class Mopper extends Unit {
 
         @Override
         public void act() throws GameActionException {
-            if(ruinLoc == null || !rc.canSenseLocation(ruinLoc)) {
+            if (ruinLoc == null || !rc.canSenseLocation(ruinLoc)) {
                 yieldStrategy();
                 return;
             }
+
+            // if tower is already built, we ignore
+            if (rc.getLocation().isWithinDistanceSquared(ruinLoc, visionRadiusSquared)) {
+                RobotInfo robotInfo = rc.senseRobotAtLocation(ruinLoc);
+                if (robotInfo != null) {
+                    yieldStrategy();
+                    return ;
+                }
+            }
+            
 
             if(!locBeforeTurn.isAdjacentTo(ruinLoc)) {
                 BugNav.moveToward(ruinLoc);
@@ -133,7 +142,11 @@ public class Mopper extends Unit {
                 return;
             }
         }
-    }
+
+        public String toString() {
+            return "MopRuin " + ruinLoc + " " + turnsWithNothingToMop;
+        }
+     }
     
     /**
      * Strategy to pick a random location and wander over for X turns, and if ruin is found
@@ -162,8 +175,10 @@ public class Mopper extends Unit {
             }
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 MapInfo tile = nearbyMapInfos[i];
-                if(tile.hasRuin()) {
-                    switchStrategy(new MopRuinStrategy(tile.getMapLocation()));
+                MapLocation loc = tile.getMapLocation();
+                RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
+                if(tile.hasRuin() && robotInfo == null) {
+                    switchStrategy(new MopRuinStrategy(loc));
                     return;
                 }
                 if (tile.getPaint().isEnemy()) {

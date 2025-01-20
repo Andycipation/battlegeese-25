@@ -252,7 +252,7 @@ public class Soldier extends Unit {
                 RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
                 if (prevLoc != null && !prevLoc.isWithinDistanceSquared(loc, actionRadiusSquared)
                         && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo) && locBeforeTurn.distanceSquaredTo(prevLoc) < 4) {
-                       rc.setTimelineMarker("Kiting time!", 0, 255, 0);
+                    //    rc.setTimelineMarker("Kiting time!", 0, 255, 0);
                     switchStrategy(new KitingStrategy(prevLoc, locBeforeTurn, loc));
                     return;
                 }
@@ -360,7 +360,7 @@ public class Soldier extends Unit {
                 tryAttack(target);
             }
             turnsMoved++;
-            System.out.println(toString());
+            // System.out.println(toString());
         }
 
         @Override
