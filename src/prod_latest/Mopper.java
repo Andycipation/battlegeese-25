@@ -69,7 +69,7 @@ public class Mopper extends Unit {
         }
 
         public String toString() {
-            return "Aggro";
+            return "Aggro ";
         }
     
     }
@@ -181,6 +181,11 @@ public class Mopper extends Unit {
                     switchStrategy(new MopRuinStrategy(loc));
                     return;
                 }
+            }
+
+            for (int i = nearbyMapInfos.length; --i >= 0;) {
+                MapInfo tile = nearbyMapInfos[i];
+                MapLocation loc = tile.getMapLocation();
                 if (tile.getPaint().isEnemy()) {
                     switchStrategy(new AggroStrategy());
                     return;
