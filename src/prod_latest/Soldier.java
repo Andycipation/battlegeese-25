@@ -1,7 +1,5 @@
 package prod_latest;
 
-import java.lang.annotation.Target;
-
 import battlecode.common.*;
 
 public class Soldier extends Unit {
@@ -142,9 +140,9 @@ public class Soldier extends Unit {
                 }
             }
 
-            if (!curLoc.isAdjacentTo(ruinLoc)) { // if ruin is not adjacent, walk closer
+            if (!locBeforeTurn.isAdjacentTo(ruinLoc)) { // if ruin is not adjacent, walk closer
                 BugNav.moveToward(ruinLoc);
-                tryPaintBelowSelf(getTowerPaintColor(ruinLoc, curLoc, towerType));
+                tryPaintBelowSelf(getTowerPaintColor(ruinLoc, locBeforeTurn, towerType));
             } else { // can sense ruin, so try to paint it in
 
                 for (int i = adjacentDirections.length; --i >= 0;) {
@@ -160,7 +158,7 @@ public class Soldier extends Unit {
                 }
 
                 // walk around tower every turn to not miss any squares
-                Direction dir = curLoc.directionTo(ruinLoc).rotateLeft();
+                Direction dir = locBeforeTurn.directionTo(ruinLoc).rotateLeft();
                 if (rc.canMove(dir)) {
                     rc.move(dir);
                     tryPaintBelowSelf(getTowerPaintColor(ruinLoc, rc.getLocation(), towerType));
@@ -202,6 +200,7 @@ public class Soldier extends Unit {
             }
         }
 
+        @Override
         public String toString() {
             return "BuildTower " + ruinLoc + " " + towerType;
         }
@@ -252,18 +251,18 @@ public class Soldier extends Unit {
                 MapLocation loc = tile.getMapLocation();
                 RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
                 if (prevLoc != null && !prevLoc.isWithinDistanceSquared(loc, actionRadiusSquared)
-                        && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo) && curLoc.distanceSquaredTo(prevLoc) < 4) {
+                        && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo) && locBeforeTurn.distanceSquaredTo(prevLoc) < 4) {
                        rc.setTimelineMarker("Kiting time!", 0, 255, 0);
-                    switchStrategy(new KitingStrategy(prevLoc, curLoc, loc));
+                    switchStrategy(new KitingStrategy(prevLoc, locBeforeTurn, loc));
                     return;
                 }
             }
-            prevLoc = curLoc;
+            prevLoc = locBeforeTurn;
 
             BugNav.moveToward(target);
             boolean painted = tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
             if (!painted) {
-                MapInfo[] attackableTiles = rc.senseNearbyMapInfos(curLoc, actionRadiusSquared);
+                MapInfo[] attackableTiles = rc.senseNearbyMapInfos(locBeforeTurn, actionRadiusSquared);
                 for (int i = attackableTiles.length; --i >= 0;) {
                     MapInfo tile = attackableTiles[i];
                     MapLocation loc = tile.getMapLocation();
@@ -274,17 +273,15 @@ public class Soldier extends Unit {
             }
 
             // try to complete any resource pattern in range
-            MapInfo[] sensedTiles = rc.senseNearbyMapInfos();
-            for (int i = sensedTiles.length; --i >= 0;) {
-                MapInfo tile = sensedTiles[i];
-                MapLocation loc = sensedTiles[i].getMapLocation();
+            for (int i = nearbyMapInfos.length; --i >= 0;) {
+                MapLocation loc = nearbyMapInfos[i].getMapLocation();
                 if (isInSrpCenterLocation(loc) && rc.canCompleteResourcePattern(loc)) {
                     rc.setIndicatorDot(loc, 0, 255, 0);
                     rc.completeResourcePattern(loc);
                 }
             }
 
-            if (rc.getLocation() == curLoc) {
+            if (rc.getLocation() == locBeforeTurn) {
                 turnsNotMoved++;
                 if (turnsNotMoved >= 3) {
                     yieldStrategy();
@@ -300,6 +297,7 @@ public class Soldier extends Unit {
             }
         }
 
+        @Override
         public String toString() {
             return "Explore " + turnsLeft + " " + target;
         }
@@ -365,6 +363,7 @@ public class Soldier extends Unit {
             System.out.println(toString());
         }
 
+        @Override
         public String toString() {
             return "Kiting " + outRangeLoc + " " + inRangeLoc + " " + target;
         }
@@ -377,8 +376,7 @@ public class Soldier extends Unit {
 
         @Override
         public void act() throws GameActionException {
-            // TODO: wait barely out-of-range until the tower has enough paint to refill.
-            // Also try to spread out among the robots waiting to be refilled.
+            // TODO: try to spread out among the robots waiting to be refilled.
             if (paintTowerLoc == null) {
                 yieldStrategy();
                 return;
@@ -423,6 +421,11 @@ public class Soldier extends Unit {
             }
         }
 
+        @Override
+        public String toString() {
+            return "RefillPaintStrategy " + paintTowerLoc;
+        }
+
     }
 
     // Run away from tower we were attacking if health is low
@@ -449,6 +452,7 @@ public class Soldier extends Unit {
             turns--;
         }
 
+        @Override
         public String toString() {
             return "Run away " + target + " " + turns + " " + target.directionTo(rc.getLocation());
         }
@@ -471,6 +475,7 @@ public class Soldier extends Unit {
             target = _target;
         }
 
+        @Override
         public void act() throws GameActionException {
             MapLocation curLoc = rc.getLocation();
 
@@ -510,6 +515,7 @@ public class Soldier extends Unit {
             BugNav.moveToward(target);
         }
 
+        @Override
         public String toString() {
             return "Trolling " + target + " " + trolledLocs[trolledLocIdx];
         }

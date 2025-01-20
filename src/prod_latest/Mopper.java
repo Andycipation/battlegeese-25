@@ -175,7 +175,7 @@ public class Mopper extends Unit {
             }
     
             BugNav.moveToward(target);
-            if (rc.getLocation() == curLoc) {
+            if (rc.getLocation() == locBeforeTurn) {
                 turnsNotMoved++;
                 if (turnsNotMoved >= 3) {
                     yieldStrategy();

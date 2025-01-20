@@ -9,7 +9,7 @@ public class Tower extends Robot {
 
     public static boolean tryBuildUnit(UnitType robotType) throws GameActionException {
         for (int i = adjacentDirections.length; --i >= 0; ) {
-            MapLocation loc = curLoc.add(adjacentDirections[i]);
+            MapLocation loc = locBeforeTurn.add(adjacentDirections[i]);
             if (rc.canBuildRobot(robotType, loc)) {
                 rc.buildRobot(robotType, loc);
                 unitsBuilt++;
@@ -41,6 +41,7 @@ public class Tower extends Robot {
     
     @Override
     void play() throws GameActionException {
+        // System.out.println("progress: " + getProgress());
 
         if (spawnStrat == null) {
             switch (mapCategory) {
