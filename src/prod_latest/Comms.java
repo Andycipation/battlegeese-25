@@ -4,12 +4,12 @@ import battlecode.common.*;
 
 public class Comms {
     /**
-     * THE FIRST FIELD OF ANY MESSAGE MUST SPECIFY THE PROTOCAL WE ARE ON
+     * THE FIRST FIELD OF ANY MESSAGE MUST SPECIFY THE PROTOCOL WE ARE ON
      */
     final public static int IDENTIFIER_SZ = 16;
     
-    // to get index of specific Protocal p, use p.ordinal()
-    public enum Protocal {
+    // to get index of specific Protocol p, use p.ordinal()
+    public enum Protocol {
         TOWER_TO_TOWER_V1,
         TOWER_TO_TOWER_V2,
         TOWER_NETWORK_REQUEST,
@@ -46,8 +46,8 @@ public class Comms {
         Comms.MAP_ENCODE_SZ, // informed location
     });
     
-    public static Protocal getProtocol(int msg) {
-        return Protocal.values()[msg % IDENTIFIER_SZ];
+    public static Protocol getProtocol(int msg) {
+        return Protocol.values()[msg % IDENTIFIER_SZ];
     }
 
     final public static int BIT_SZ = 2;

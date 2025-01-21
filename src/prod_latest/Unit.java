@@ -128,7 +128,7 @@ public abstract class Unit extends Robot {
             MapLocation informLoc = (networkToSend == 1 ? informedEnemyPaintLoc : informedEmptyPaintLoc);
             int timestamp = (networkToSend == 1 ? informedEnemyPaintLocTimestamp : informedEmptyPaintLocTimestamp);
             int msg = Comms.towerNetworkInformComms.encode(new int[]{
-                Comms.Protocal.TOWER_NETWORK_INFORM.ordinal(),
+                Comms.Protocol.TOWER_NETWORK_INFORM.ordinal(),
                 networkToSend,
                 timestamp,
                 Comms.encodeMapLocation(informLoc)

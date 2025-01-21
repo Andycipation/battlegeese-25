@@ -118,7 +118,7 @@ public class Tower extends Robot {
             
             for (int i = lastRoundMessages.length; --i >= 0; ) {
                 int bytes = lastRoundMessages[i].getBytes();
-                if (Comms.getProtocol(bytes) == Comms.Protocal.TOWER_TO_TOWER_V1) {
+                if (Comms.getProtocol(bytes) == Comms.Protocol.TOWER_TO_TOWER_V1) {
                     int[] data = Comms.towerToTowerCommsV1.decode(bytes);
                     int relaxEmptyLevel = Math.min(data[1] + 1, UNDETECTED_LEVEL);
                     int relaxEnemyLevel = Math.min(data[2] + 1, UNDETECTED_LEVEL);
@@ -145,7 +145,7 @@ public class Tower extends Robot {
             }
     
             rc.broadcastMessage(Comms.towerToTowerCommsV1.encode(
-                new int[]{Comms.Protocal.TOWER_TO_TOWER_V1.ordinal(),
+                new int[]{Comms.Protocol.TOWER_TO_TOWER_V1.ordinal(),
                           emptyLevel,
                           enemyLevel,
                           Comms.encodeMapLocation(locBeforeTurn)}));
@@ -172,14 +172,14 @@ public class Tower extends Robot {
                             int msg;
                             if (requestedLevel == UNDETECTED_LEVEL || buffer.empty()) {
                                 msg = Comms.towerNetworkResponseComms.encode(new int[]{
-                                    Comms.Protocal.TOWER_NETWORK_RESPONSE.ordinal(),
+                                    Comms.Protocol.TOWER_NETWORK_RESPONSE.ordinal(),
                                     0, // not successful
                                     0 // random value
                                 });
                             }
                             else {
                                 msg = Comms.towerNetworkResponseComms.encode(new int[]{
-                                    Comms.Protocal.TOWER_NETWORK_RESPONSE.ordinal(),
+                                    Comms.Protocol.TOWER_NETWORK_RESPONSE.ordinal(),
                                     1, // successful
                                     Comms.encodeMapLocation(buffer.poll()) // next location in network
                                 });
@@ -280,7 +280,7 @@ public class Tower extends Robot {
             
             for (int i = lastRoundMessages.length; --i >= 0; ) {
                 int bytes = lastRoundMessages[i].getBytes();
-                if (Comms.getProtocol(bytes) == Comms.Protocal.TOWER_TO_TOWER_V2) {
+                if (Comms.getProtocol(bytes) == Comms.Protocol.TOWER_TO_TOWER_V2) {
                     int[] data = Comms.towerToTowerCommsV2.decode(bytes);
                     int network = data[1];
                     int timestamp = data[2];
@@ -304,7 +304,7 @@ public class Tower extends Robot {
                 int transmitTimestamp = (network == 0 ? emptyLocTimestamp : enemyLocTimestamp);
                 if (transmitLoc != null) {
                     rc.broadcastMessage(Comms.towerToTowerCommsV2.encode(
-                        new int[]{Comms.Protocal.TOWER_TO_TOWER_V2.ordinal(),
+                        new int[]{Comms.Protocol.TOWER_TO_TOWER_V2.ordinal(),
                                     network,
                                     transmitTimestamp,
                                     Comms.encodeMapLocation(transmitLoc)}));
@@ -322,7 +322,7 @@ public class Tower extends Robot {
                         if (robot.getType().isTowerType()) continue;
                         MapLocation loc = robot.location;
                         int msg = Comms.towerNetworkInformComms.encode(new int[]{
-                            Comms.Protocal.TOWER_NETWORK_INFORM.ordinal(),
+                            Comms.Protocol.TOWER_NETWORK_INFORM.ordinal(),
                             network,
                             transmitTimestamp, // enemy network
                             Comms.encodeMapLocation(transmitLoc)
