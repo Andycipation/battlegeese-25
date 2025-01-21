@@ -7,6 +7,7 @@ public abstract class Robot extends Globals {
     public static MapInfo[] nearbyMapInfos;
     public static RobotInfo[] nearbyAllyRobots;
     public static RobotInfo[] nearbyEnemyRobots;
+    public static MapLocation[] nearbyRuins;
     public static MapLocation locBeforeTurn;
     public static int numTowers;
     public static int roundNum;
@@ -47,6 +48,7 @@ public abstract class Robot extends Globals {
         nearbyMapInfos = rc.senseNearbyMapInfos();
         nearbyAllyRobots = rc.senseNearbyRobots(-1, myTeam);
         nearbyEnemyRobots = rc.senseNearbyRobots(-1, opponentTeam);
+        nearbyRuins = rc.senseNearbyRuins(visionRadiusSquared);
         locBeforeTurn = rc.getLocation();
         numTowers = rc.getNumberTowers();
         roundNum = rc.getRoundNum();
