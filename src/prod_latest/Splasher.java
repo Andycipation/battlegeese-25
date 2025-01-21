@@ -134,14 +134,13 @@ public class Splasher extends Unit {
                 MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
                 int x = diff.x + 2;
                 int y = diff.y + 2;
-                Logger.log(diff + " " + points[x][y]);
                 if (memory[loc.x][loc.y] == MapLocationType.PASSABLE && points[x][y] > bestAttackPoints) {
                     bestAttackPoints = points[x][y];
                     bestAttackLoc = loc;
                 }
             }
 
-            Logger.log("" + bestAttackPoints + " " + bestAttackLoc);
+            Logger.log("attack points: " + bestAttackPoints + " " + bestAttackLoc);
             if (bestAttackPoints >= 9 && rc.canAttack(bestAttackLoc)) {
                 rc.attack(bestAttackLoc);
             }
