@@ -104,6 +104,26 @@ public class Globals {
     }
 
     /**
+     * Shuffles a direction array   
+     */
+    public static void shuffleArray(Direction[] array) {
+        for (int i = array.length - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
+
+            Direction temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+        }
+    }
+
+    /*
+     * Check if location is in bounds
+     */
+
+    public static boolean withinBounds(MapLocation loc) {
+        return 0 <= loc.x && loc.x < mapWidth && 0 <= loc.y && loc.y < mapHeight;
+    }
+    /**
      * Picks a random integer 0-1 with P[i] = wi / sum_i wi
      */
     public static int randChoice(int w1, int w2) {
