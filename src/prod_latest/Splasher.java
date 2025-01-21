@@ -135,7 +135,7 @@ public class Splasher extends Unit {
                 MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
                 int x = diff.x + 2;
                 int y = diff.y + 2;
-                if (memory[loc.x][loc.y] == MapLocationType.PASSABLE && points[x][y] > bestAttackPoints) {
+                if (tile.isPassable() && points[x][y] > bestAttackPoints) {
                     bestAttackPoints = points[x][y];
                     bestAttackLoc = loc;
                 }
