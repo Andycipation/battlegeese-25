@@ -160,7 +160,7 @@ public class Soldier extends Unit {
             }
             if (rc.senseRobotAtLocation(ruinLoc) != null) {
                 int paintWanted = Math.min(rc.senseRobotAtLocation(ruinLoc).paintAmount, paintCapacity - rc.getPaint());
-                System.out.println("trying to take " + paintWanted + " from " + ruinLoc);
+                // System.out.println("trying to take " + paintWanted + " from " + ruinLoc);
                 if (rc.canTransferPaint(ruinLoc, -paintWanted))
                     rc.transferPaint(ruinLoc, -paintWanted);
                 yieldStrategy(true);
