@@ -283,6 +283,7 @@ public class Globals {
         return loc.x % 4 == 2 && loc.y % 4 == 2;
     }
 
-    
-
+    public static int chebyshevDist(MapLocation a, MapLocation b) {
+        return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+    }
 }

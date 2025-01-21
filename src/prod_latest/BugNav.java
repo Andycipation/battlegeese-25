@@ -153,8 +153,4 @@ public class BugNav extends Globals {
 
         return (char) ((((myLocation.x << 6) | myLocation.y) << 4) | (direction.ordinal() << 1) | rotation);
     }
-
-    private static int chebyshevDist(MapLocation a, MapLocation b) {
-        return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
-    }
 }
