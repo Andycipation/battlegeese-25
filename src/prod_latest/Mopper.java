@@ -82,10 +82,7 @@ public class Mopper extends Unit {
     
         @Override
         public void act() throws GameActionException {
-            int bytecode_before = Clock.getBytecodeNum();
             trySweep();
-            int bytecode_after = Clock.getBytecodeNum();
-            System.out.println("bytecode diff: " + (bytecode_after - bytecode_before));
 
             if (cleanRuinCoolDown-- <= 0) {
                 for (int i = nearbyMapInfos.length; --i >= 0;) {

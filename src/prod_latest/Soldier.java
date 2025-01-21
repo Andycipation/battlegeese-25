@@ -1,7 +1,6 @@
 package prod_latest;
 
 import battlecode.common.*;
-import prod_latest.Unit.MapLocationType;
 
 public class Soldier extends Unit {
     /**
@@ -21,16 +20,15 @@ public class Soldier extends Unit {
     }
 
     public static void yieldStrategy(boolean acted) throws GameActionException {
-        if (rc.getPaint() < 50 && paintTowerLoc != null && getProgress() < 0.3) {
+        if (rc.getPaint() < 50 && paintTowerLoc != null) {
             Logger.log("refilling paint");
             Logger.flush();
             strategy = new RefillPaintStrategy(120);
         } else {
             MapLocation target = new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
-            strategy = new ExploreStrategy(target);
+            strategy = new ExploreStrategy(target, 8);
         }
         if (!acted) {
-            Logger.log(strategy.toString());
             strategy.act();
         }
     }
@@ -51,8 +49,8 @@ public class Soldier extends Unit {
                 yieldStrategy(false);
             }
         }
-        Logger.log(strategy.toString());
         strategy.act();
+        Logger.log(strategy.toString());
 
         // also wanna upgrade towers nearby if possible
         upgradeTowers();
@@ -63,14 +61,64 @@ public class Soldier extends Unit {
         abstract public void act() throws GameActionException;
     }
 
-    // static class EarlyGameStrategy extends SoldierStrategy {
+    enum MarkType {
+        // BUILD_SRP,
+        BUILD_PAINT_TOWER,
+        BUILD_MONEY_TOWER,
+    }
 
-    //     @Override
-    //     public void act() throws GameActionException {
-            
-    //     }
+    private static int markToInt(PaintType mark) {
+        return switch (mark) {
+            case ALLY_PRIMARY -> 1;
+            case ALLY_SECONDARY -> 2;
+            default -> 0;
+        };
+    }
 
-    // }
+    private static boolean canMarkRuin(MapLocation center) {
+        var loc1 = center.add(Direction.NORTH);
+        var loc2 = center.add(Direction.NORTHEAST);
+        return rc.canMark(loc1) && rc.canMark(loc2);
+    }
+
+    private static boolean canSenseMarks(MapLocation center) throws GameActionException {
+        var loc1 = center.add(Direction.NORTH);
+        var loc2 = center.add(Direction.NORTHEAST);
+        return rc.canSenseLocation(loc1) && rc.canSenseLocation(loc2);
+    }
+
+    private static MarkType getMarkType(MapLocation center) throws GameActionException {
+        var loc1 = center.add(Direction.NORTH);
+        var loc2 = center.add(Direction.NORTHEAST);
+        int mark1 = markToInt(rc.senseMapInfo(loc1).getMark());
+        int mark2 = markToInt(rc.senseMapInfo(loc2).getMark());
+        if (mark1 == 1) return MarkType.BUILD_MONEY_TOWER;
+        if (mark1 == 2 && mark2 == 1) return MarkType.BUILD_PAINT_TOWER;
+        // if (mark1 == 2 && mark2 == 2) return MarkType.BUILD_SRP;
+        return null;
+    }
+
+    private static boolean markMap(MapLocation center, MarkType markType) throws GameActionException {
+        var loc1 = center.add(Direction.NORTH);
+        var loc2 = center.add(Direction.NORTHEAST);
+        if (rc.getPaint() >= 2 && rc.canMark(loc1) && rc.canMark(loc2)) {
+            switch (markType) {
+                case BUILD_MONEY_TOWER -> {
+                    rc.mark(loc1, false);
+                }
+                case BUILD_PAINT_TOWER -> {
+                    rc.mark(loc1, true);
+                    rc.mark(loc2, false);
+                }
+                // case BUILD_SRP -> {
+                //     rc.mark(loc1, true);
+                //     rc.mark(loc2, true);
+                // }
+            }
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Strategy to build a tower at specified ruin location
@@ -80,10 +128,28 @@ public class Soldier extends Unit {
         public static MapLocation ruinLoc;
         public static UnitType towerType;
 
-        BuildTowerStrategy(MapLocation _ruinLoc) {
+        BuildTowerStrategy(MapLocation _ruinLoc, UnitType _towerType) {
             // Precondition: we can sense the ruin location
             ruinLoc = _ruinLoc;
             assert(ruinLoc != null);
+            towerType = _towerType;
+        }
+
+        private boolean isRuinMostlyDone() throws GameActionException {
+            int visible = 0;
+            int done = 0;
+            for (int i = nearbyMapInfos.length; --i >= 0;) {
+                var info = nearbyMapInfos[i];
+                if (ruinLoc.distanceSquaredTo(info.getMapLocation()) <= GameConstants.RESOURCE_PATTERN_RADIUS_SQUARED) {
+                    visible += 1;
+                    var expectedColor = getTowerPaintColor(ruinLoc, info.getMapLocation(), towerType);
+                    if (expectedColor == info.getPaint()) {
+                        done += 1;
+                    }
+                }
+            }
+            // TODO: optimize this return statement to use ints
+            return 1.0 * visible / done > 0.8;
         }
 
         @Override
@@ -94,12 +160,62 @@ public class Soldier extends Unit {
             }
             if (rc.senseRobotAtLocation(ruinLoc) != null) {
                 int paintWanted = Math.min(rc.senseRobotAtLocation(ruinLoc).paintAmount, paintCapacity - rc.getPaint());
-                System.out.println("trying to take " + paintWanted + " from " + ruinLoc);
                 if (rc.canTransferPaint(ruinLoc, -paintWanted))
                     rc.transferPaint(ruinLoc, -paintWanted);
                 yieldStrategy(true);
                 return;
             }
+
+            // If we can't sense the marks, move closer without painting underneath us.
+            if (!canSenseMarks(ruinLoc)) {
+                BugNav.moveToward(ruinLoc);
+                return;
+            }
+
+            // Get the tower type we are currently trying to build, or make the mark ourselves
+            MarkType markType = getMarkType(ruinLoc);
+            if (markType == null) {
+                // We are the first to arrive; try to mark the ruin accordingly
+                var toMarkType = switch (towerType) {
+                    case LEVEL_ONE_MONEY_TOWER -> MarkType.BUILD_MONEY_TOWER;
+                    case LEVEL_ONE_PAINT_TOWER -> MarkType.BUILD_PAINT_TOWER;
+                    default -> {
+                        throw new IllegalArgumentException();
+                    }
+                };
+                if (!canMarkRuin(ruinLoc)) {
+                    BugNav.moveToward(ruinLoc);
+                    return;
+                }
+                if (!markMap(ruinLoc, toMarkType)) {
+                    return;
+                }
+            } else {
+                towerType = switch (markType) {
+                    case BUILD_MONEY_TOWER -> UnitType.LEVEL_ONE_MONEY_TOWER;
+                    case BUILD_PAINT_TOWER -> UnitType.LEVEL_ONE_PAINT_TOWER;
+                };
+            }
+
+            Logger.log("has mark " + markType);
+
+            // If we don't have nearly enough chips to finish this, leave
+            // if (rc.getChips() < 300) {
+            //     yieldStrategy(false);
+            //     return;
+            // }
+
+            // If there is already a robot next to the ruin and it's mostly finished, we go explore somewhere else instead
+            // boolean mostlyDone = isRuinMostlyDone();
+            // if (mostlyDone) {
+            //     for (int i = nearbyAllyRobots.length; --i >= 0;) {
+            //         var robot = nearbyAllyRobots[i];
+            //         if (robot.type == UnitType.SOLDIER && robot.location.isAdjacentTo(ruinLoc)) {
+            //             yieldStrategy(false);
+            //             return;
+            //         }
+            //     }
+            // }
 
             // If ruin is not adjacent, walk closer
             if (!locBeforeTurn.isAdjacentTo(ruinLoc)) {
@@ -107,6 +223,21 @@ public class Soldier extends Unit {
                 tryPaintBelowSelf(getTowerPaintColor(ruinLoc, locBeforeTurn, towerType));
                 return;
             }
+
+            // // Check adjacent squares for robots; if there is one, leave if tiebreaker
+            // for (int i = adjacentDirections.length; --i >= 0;) {
+            //     MapLocation loc = ruinLoc.add(adjacentDirections[i]);
+            //     if (loc == rc.getLocation()) {
+            //         continue;
+            //     }
+            //     RobotInfo robot = rc.senseRobotAtLocation(loc);
+            //     if (robot != null
+            //             && robot.getTeam() == myTeam
+            //             && (robot.getPaintAmount() > rc.getPaint() || robot.getPaintAmount() == rc.getPaint() && robot.getID() > rc.getID())) {
+            //         yieldStrategy(false);
+            //         return;
+            //     }
+            // }
 
             // Walk around tower every turn to not miss any squares
             Direction dir = locBeforeTurn.directionTo(ruinLoc).rotateLeft();
@@ -160,305 +291,67 @@ public class Soldier extends Unit {
     // Moves towards `target` for `turns` turns.
     static class ExploreStrategy extends SoldierStrategy {
 
-        // The target for the current project:
-        // buildingRuin - ruin location
-        // buildingSrp - proposed SRP center
-        // neither - explore location
         public static MapLocation target;
-        boolean buildingRuin;
-        boolean buildingSrp;
-        static int precompAppearsClear[];
+        public static int turnsLeft;
 
-        ExploreStrategy(MapLocation _target) {
+        public static int targetRuinCooldown;
+        public static int turnsNotMoved;
+
+        ExploreStrategy(MapLocation _target, int turns) {
             target = _target;
-            buildingRuin = false;
-            buildingSrp = false;
+            turnsLeft = turns;
+            targetRuinCooldown = 0;
+            turnsNotMoved = 0;
         }
 
         UnitType getTowerToBuild() {
-            // The first two are in case we drop below 2 towers
-            final int[] ORDER = {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1};
-            if (numTowers >= ORDER.length) {
-                return UnitType.LEVEL_ONE_PAINT_TOWER;
+            if (rc.getNumberTowers() <= 3) {
+                return UnitType.LEVEL_ONE_MONEY_TOWER;
             }
-            return switch (ORDER[numTowers]) {
+            int moneyTowerWeight = 4;
+            int paintTowerWeight = numTowers;
+            return switch (randChoice(moneyTowerWeight, paintTowerWeight)) {
                 case 0 -> UnitType.LEVEL_ONE_MONEY_TOWER;
-                case 1 -> UnitType.LEVEL_ONE_PAINT_TOWER;
-                default -> throw new IllegalArgumentException();
+                default -> UnitType.LEVEL_ONE_PAINT_TOWER;
             };
-        }
-
-        void precomputePatternAppearsClear() {
-            precompAppearsClear = new int[3];
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                MapInfo tile = nearbyMapInfos[i];
-                if (!tile.getPaint().isEnemy() && !tile.isWall()) {
-                    continue;
-                }
-                MapLocation loc = tile.getMapLocation();
-                MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
-                switch (diff.x * 1000 + diff.y) {
-                    case -4002: precompAppearsClear[0] |= 8142367; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, -2)
-                    case -4001: precompAppearsClear[0] |= 16284734; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, -1)
-                    case -4000: precompAppearsClear[0] |= 32569468; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 0)
-                    case -3999: precompAppearsClear[0] |= 65138936; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 1)
-                    case -3998: precompAppearsClear[0] |= 130277872; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 2)
-                    case -3003: precompAppearsClear[0] |= 3939855; precompAppearsClear[1] |= 15; precompAppearsClear[2] |= 0; break; // (-3, -3)
-                    case -3002: precompAppearsClear[0] |= 8142367; precompAppearsClear[1] |= 31; precompAppearsClear[2] |= 0; break; // (-3, -2)
-                    case -3001: precompAppearsClear[0] |= 16284734; precompAppearsClear[1] |= 62; precompAppearsClear[2] |= 0; break; // (-3, -1)
-                    case -3000: precompAppearsClear[0] |= 32569468; precompAppearsClear[1] |= 124; precompAppearsClear[2] |= 0; break; // (-3, 0)
-                    case -2999: precompAppearsClear[0] |= 65138936; precompAppearsClear[1] |= 248; precompAppearsClear[2] |= 0; break; // (-3, 1)
-                    case -2998: precompAppearsClear[0] |= 130277872; precompAppearsClear[1] |= 496; precompAppearsClear[2] |= 0; break; // (-3, 2)
-                    case -2997: precompAppearsClear[0] |= 126075360; precompAppearsClear[1] |= 480; precompAppearsClear[2] |= 0; break; // (-3, 3)
-                    case -2004: precompAppearsClear[0] |= 1838599; precompAppearsClear[1] |= 3591; precompAppearsClear[2] |= 0; break; // (-2, -4)
-                    case -2003: precompAppearsClear[0] |= 3939855; precompAppearsClear[1] |= 7695; precompAppearsClear[2] |= 0; break; // (-2, -3)
-                    case -2002: precompAppearsClear[0] |= 8142367; precompAppearsClear[1] |= 15903; precompAppearsClear[2] |= 0; break; // (-2, -2)
-                    case -2001: precompAppearsClear[0] |= 16284734; precompAppearsClear[1] |= 31806; precompAppearsClear[2] |= 0; break; // (-2, -1)
-                    case -2000: precompAppearsClear[0] |= 32569468; precompAppearsClear[1] |= 63612; precompAppearsClear[2] |= 0; break; // (-2, 0)
-                    case -1999: precompAppearsClear[0] |= 65138936; precompAppearsClear[1] |= 127224; precompAppearsClear[2] |= 0; break; // (-2, 1)
-                    case -1998: precompAppearsClear[0] |= 130277872; precompAppearsClear[1] |= 254448; precompAppearsClear[2] |= 0; break; // (-2, 2)
-                    case -1997: precompAppearsClear[0] |= 126075360; precompAppearsClear[1] |= 246240; precompAppearsClear[2] |= 0; break; // (-2, 3)
-                    case -1996: precompAppearsClear[0] |= 117670336; precompAppearsClear[1] |= 229824; precompAppearsClear[2] |= 0; break; // (-2, 4)
-                    case -1004: precompAppearsClear[0] |= 1838592; precompAppearsClear[1] |= 1838599; precompAppearsClear[2] |= 0; break; // (-1, -4)
-                    case -1003: precompAppearsClear[0] |= 3939840; precompAppearsClear[1] |= 3939855; precompAppearsClear[2] |= 0; break; // (-1, -3)
-                    case -1002: precompAppearsClear[0] |= 8142336; precompAppearsClear[1] |= 8142367; precompAppearsClear[2] |= 0; break; // (-1, -2)
-                    case -1001: precompAppearsClear[0] |= 16284672; precompAppearsClear[1] |= 16284734; precompAppearsClear[2] |= 0; break; // (-1, -1)
-                    case -1000: precompAppearsClear[0] |= 32569344; precompAppearsClear[1] |= 32569468; precompAppearsClear[2] |= 0; break; // (-1, 0)
-                    case -999: precompAppearsClear[0] |= 65138688; precompAppearsClear[1] |= 65138936; precompAppearsClear[2] |= 0; break; // (-1, 1)
-                    case -998: precompAppearsClear[0] |= 130277376; precompAppearsClear[1] |= 130277872; precompAppearsClear[2] |= 0; break; // (-1, 2)
-                    case -997: precompAppearsClear[0] |= 126074880; precompAppearsClear[1] |= 126075360; precompAppearsClear[2] |= 0; break; // (-1, 3)
-                    case -996: precompAppearsClear[0] |= 117669888; precompAppearsClear[1] |= 117670336; precompAppearsClear[2] |= 0; break; // (-1, 4)
-                    case -4: precompAppearsClear[0] |= 1835008; precompAppearsClear[1] |= 1838599; precompAppearsClear[2] |= 7; break; // (0, -4)
-                    case -3: precompAppearsClear[0] |= 3932160; precompAppearsClear[1] |= 3939855; precompAppearsClear[2] |= 15; break; // (0, -3)
-                    case -2: precompAppearsClear[0] |= 8126464; precompAppearsClear[1] |= 8142367; precompAppearsClear[2] |= 31; break; // (0, -2)
-                    case -1: precompAppearsClear[0] |= 16252928; precompAppearsClear[1] |= 16284734; precompAppearsClear[2] |= 62; break; // (0, -1)
-                    case 0: precompAppearsClear[0] |= 32505856; precompAppearsClear[1] |= 32569468; precompAppearsClear[2] |= 124; break; // (0, 0)
-                    case 1: precompAppearsClear[0] |= 65011712; precompAppearsClear[1] |= 65138936; precompAppearsClear[2] |= 248; break; // (0, 1)
-                    case 2: precompAppearsClear[0] |= 130023424; precompAppearsClear[1] |= 130277872; precompAppearsClear[2] |= 496; break; // (0, 2)
-                    case 3: precompAppearsClear[0] |= 125829120; precompAppearsClear[1] |= 126075360; precompAppearsClear[2] |= 480; break; // (0, 3)
-                    case 4: precompAppearsClear[0] |= 117440512; precompAppearsClear[1] |= 117670336; precompAppearsClear[2] |= 448; break; // (0, 4)
-                    case 996: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 1838599; precompAppearsClear[2] |= 3591; break; // (1, -4)
-                    case 997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3939855; precompAppearsClear[2] |= 7695; break; // (1, -3)
-                    case 998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 8142367; precompAppearsClear[2] |= 15903; break; // (1, -2)
-                    case 999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 16284734; precompAppearsClear[2] |= 31806; break; // (1, -1)
-                    case 1000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 32569468; precompAppearsClear[2] |= 63612; break; // (1, 0)
-                    case 1001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 65138936; precompAppearsClear[2] |= 127224; break; // (1, 1)
-                    case 1002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 130277872; precompAppearsClear[2] |= 254448; break; // (1, 2)
-                    case 1003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 126075360; precompAppearsClear[2] |= 246240; break; // (1, 3)
-                    case 1004: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 117670336; precompAppearsClear[2] |= 229824; break; // (1, 4)
-                    case 1996: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 1838592; precompAppearsClear[2] |= 1838599; break; // (2, -4)
-                    case 1997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3939840; precompAppearsClear[2] |= 3939855; break; // (2, -3)
-                    case 1998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 8142336; precompAppearsClear[2] |= 8142367; break; // (2, -2)
-                    case 1999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 16284672; precompAppearsClear[2] |= 16284734; break; // (2, -1)
-                    case 2000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 32569344; precompAppearsClear[2] |= 32569468; break; // (2, 0)
-                    case 2001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 65138688; precompAppearsClear[2] |= 65138936; break; // (2, 1)
-                    case 2002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 130277376; precompAppearsClear[2] |= 130277872; break; // (2, 2)
-                    case 2003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 126074880; precompAppearsClear[2] |= 126075360; break; // (2, 3)
-                    case 2004: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 117669888; precompAppearsClear[2] |= 117670336; break; // (2, 4)
-                    case 2997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3932160; precompAppearsClear[2] |= 3939855; break; // (3, -3)
-                    case 2998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 8126464; precompAppearsClear[2] |= 8142367; break; // (3, -2)
-                    case 2999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 16252928; precompAppearsClear[2] |= 16284734; break; // (3, -1)
-                    case 3000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 32505856; precompAppearsClear[2] |= 32569468; break; // (3, 0)
-                    case 3001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 65011712; precompAppearsClear[2] |= 65138936; break; // (3, 1)
-                    case 3002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 130023424; precompAppearsClear[2] |= 130277872; break; // (3, 2)
-                    case 3003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 125829120; precompAppearsClear[2] |= 126075360; break; // (3, 3)
-                    case 3998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 8142367; break; // (4, -2)
-                    case 3999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 16284734; break; // (4, -1)
-                    case 4000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 32569468; break; // (4, 0)
-                    case 4001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 65138936; break; // (4, 1)
-                    case 4002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 130277872; break; // (4, 2)
-                }
-            }
-        }
-
-        boolean patternAppearsClear(MapLocation center) throws GameActionException {
-            MapLocation diff = center.translate(-locBeforeTurn.x, -locBeforeTurn.y);
-            int x = diff.x + 4;
-            int y = diff.y + 4;
-            // System.out.println((1 & (precompAppearsClear[x / 3] >> (9 * (x % 3) + y))) == 0);
-            return (1 & (precompAppearsClear[x / 3] >> (9 * (x % 3) + y))) == 0;
-        }
-
-        boolean knowsIsBadSrpCenter(MapLocation center) throws GameActionException {
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                MapInfo tile = nearbyMapInfos[i];
-                if (!tile.isPassable()) {
-                    return true;
-                }
-            }
-
-            // for (int dx = -4; dx <= 4; dx++) {
-            //     for (int dy = -4; dy <= 4; dy++) {
-            //         var t = new MapLocation(center.x + dx, center.y + dy);
-            //         if (rc.onTheMap(t)) {
-            //             MapLocationType memo = memory[t.x][t.y];
-            //             if (memo == MapLocationType.RUIN) {
-            //                 return true;
-            //             }
-            //         }
-            //     }
-            // }
-            return false;
-        }
-
-        void getProject() throws GameActionException {
-            if (buildingRuin || buildingSrp) {
-                return;
-            }
-            precomputePatternAppearsClear();
-            if (rc.getNumberTowers() < 25 && rc.getChips() > 500) {
-                // Check for nearby ruins
-                MapLocation ruinLoc = null;
-                for (int i = nearbyRuins.length; --i >= 0;) {
-                    MapLocation loc = nearbyRuins[i];
-                    if (rc.canSenseLocation(loc) && rc.senseRobotAtLocation(loc) == null) {
-                        ruinLoc = loc;
-                    }
-                }
-                if (ruinLoc != null && patternAppearsClear(ruinLoc)) {
-                    buildingRuin = true;
-                    target = ruinLoc;
-                    return;
-                }
-            }
-
-            // Check for places to build SRPs
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                var tile = nearbyMapInfos[i];
-                var loc = tile.getMapLocation();
-                if (loc.x % 4 == 2
-                        && loc.y % 4 == 2
-                        && patternAppearsClear(loc)
-                        // && !knowsIsBadSrpCenter(loc)
-                ) {
-                    // buildingSrp = true;
-                    target = loc;
-                    break;
-                }
-            }
-
-            target = new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
-        }
-
-        private MapLocation getRandomNearbyLocation(MapLocation center, int chebyshevDist) {
-            int x1 = Math.max(center.x - chebyshevDist, 0);
-            int x2 = Math.min(center.x + chebyshevDist, mapWidth - 1);
-            int y1 = Math.max(center.y - chebyshevDist, 0);
-            int y2 = Math.min(center.y + chebyshevDist, mapHeight - 1);
-            return new MapLocation(rng.nextInt(x1, x2 + 1), rng.nextInt(y1, y2 + 1));
         }
 
         @Override
         public void act() throws GameActionException {
-            // System.out.println("Bytecodes used (1): " + Clock.getBytecodeNum());
-            getProject();
-            // System.out.println("Bytecodes used (2): " + Clock.getBytecodeNum());
+            if (turnsLeft == 0) {
+                yieldStrategy(false);
+                return;
+            }
+            turnsLeft -= 1;
+            targetRuinCooldown -= 1;
 
-            if (buildingRuin) {
-                var ruinLoc = target;
-                // Check if it's already been finished
-                if (!patternAppearsClear(ruinLoc)) {
-                    buildingRuin = false;
-                    return;
-                }
-                if (rc.canSenseRobotAtLocation(ruinLoc)) {
-                    var robotInfo = rc.senseRobotAtLocation(ruinLoc);
-                    if (robotInfo.team.equals(myTeam)) {
-                        int paintWanted = Math.min(rc.senseRobotAtLocation(ruinLoc).paintAmount, paintCapacity - rc.getPaint());
-                        if (rc.canTransferPaint(ruinLoc, -paintWanted)) {
-                            rc.transferPaint(ruinLoc, -paintWanted);
-                        }
-                        buildingRuin = false;
+            // Check for nearby ruins
+            if (targetRuinCooldown <= 0 && rc.getNumberTowers() < 25) {
+                for (int i = nearbyMapInfos.length; --i >= 0;) {
+                    MapInfo tile = nearbyMapInfos[i];
+                    MapLocation loc = tile.getMapLocation();
+                    if (tile.hasRuin() && rc.senseRobotAtLocation(loc) == null) {
+                        var towerType = getTowerToBuild();
+                        switchStrategy(new BuildTowerStrategy(loc, towerType), false);
                         return;
                     }
                 }
-                BugNav.moveToward(ruinLoc);
-                MapInfo[] actionableMapInfos = rc.senseNearbyMapInfos(rc.getLocation(), actionRadiusSquared);
-                final var towerType = getTowerToBuild();
-                for (int j = actionableMapInfos.length; --j >= 0;) {
-                    MapInfo tile = actionableMapInfos[j];
-                    MapLocation loc = tile.getMapLocation();
-                    if (target.distanceSquaredTo(loc) > GameConstants.RESOURCE_PATTERN_RADIUS_SQUARED) {
-                        continue;
-                    }
-                    if (tryPaint(loc, getTowerPaintColor(ruinLoc, loc, towerType))) {
-                        break;
-                    }
-                }
-
-                if (rc.canCompleteTowerPattern(towerType, ruinLoc)) {
-                    rc.completeTowerPattern(towerType, ruinLoc);
-                    int paintWanted = Math.min(rc.senseRobotAtLocation(ruinLoc).paintAmount, paintCapacity - rc.getPaint());
-                    if (rc.canTransferPaint(ruinLoc, -paintWanted)) {
-                        rc.transferPaint(ruinLoc, -paintWanted);
-                    }
-                    buildingRuin = false;
-                }
-                Logger.log("building ruin");
-                return;
-            }
-            if (buildingSrp) {
-                var srpCenter = target;
-                /*
-                Only need to check the outer 2x2 strip for ruins, i.e. the C's here:
-
-                CCCCCCCCC
-                CCCCCCCCC
-                CC.....CC
-                CC.....CC
-                CC.....CC
-                CC.....CC
-                CC.....CC
-                CCCCCCCCC
-                CCCCCCCCC
-                */
-            //     MapLocation unseenLoc = null;
-            // outer:
-            //     for (int dx = -4; dx <= 4; dx++) {
-            //         for (int dy = -4; dy <= 4; dy++) {
-            //             var t = new MapLocation(srpCenter.x + dx, srpCenter.y + dy);
-            //             if (rc.onTheMap(t)) {
-            //                 MapLocationType memo = memory[t.x][t.y];
-            //                 if (memo == null) {
-            //                     unseenLoc = t;
-            //                     break outer;
-            //                 }
-            //             }
-            //         }
-            //     }
-            //     if (unseenLoc != null) {
-            //         BugNav.moveToward(unseenLoc);
-            //         tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
-            //     } else {
-            //         // No unseen locations, just go about the SRP happily :)
-            //     }
-
-                BugNav.moveToward(srpCenter);
-                
-                // Try painting
-                MapInfo[] actionableMapInfos = rc.senseNearbyMapInfos(rc.getLocation(), actionRadiusSquared);
-                for (int j = actionableMapInfos.length; --j >= 0;) {
-                    MapInfo tile = actionableMapInfos[j];
-                    MapLocation loc = tile.getMapLocation();
-                    if (target.distanceSquaredTo(loc) > GameConstants.RESOURCE_PATTERN_RADIUS_SQUARED) {
-                        continue;
-                    }
-                    if (tryPaint(loc, getSrpPaintColor(loc))) {
-                        break;
-                    }
-                }
-
-                // Try completing the SRP
-                if (rc.canCompleteResourcePattern(srpCenter)) {
-                    // rc.setIndicatorDot(loc, 0, 255, 0);
-                    rc.completeResourcePattern(srpCenter);
-                    buildingSrp = false;
-                }
-                Logger.log("building SRP");
-                return;
             }
 
-            // Just explore towards target
+            // Kiting!
+            // TODO: combine this into a single for loop, need to loop in max.
+            for (int i = nearbyEnemyRobots.length; --i >= 0;) {
+                RobotInfo robotInfo = nearbyEnemyRobots[i];
+                MapLocation loc = robotInfo.location;
+                if (prevLoc != null && !prevLoc.isWithinDistanceSquared(loc, actionRadiusSquared)
+                        && robotInfo != null && rc.canAttack(loc) && isEnemyTower(robotInfo) && locBeforeTurn.distanceSquaredTo(prevLoc) < 4) {
+                    //    rc.setTimelineMarker("Kiting time!", 0, 255, 0);
+                    switchStrategy(new KitingStrategy(prevLoc, locBeforeTurn, loc), false);
+                    return;
+                }
+            }
+            prevLoc = locBeforeTurn;
+
             BugNav.moveToward(target);
             boolean painted = tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
             if (!painted) {
@@ -480,11 +373,19 @@ public class Soldier extends Unit {
                     rc.completeResourcePattern(loc);
                 }
             }
+
+            if (rc.getLocation() == locBeforeTurn) {
+                if (++turnsNotMoved == 3) {
+                    yieldStrategy(true);
+                }
+            } else {
+                turnsNotMoved = 0;
+            }
         }
 
         @Override
         public String toString() {
-            return "Explore " + target;
+            return "Explore " + turnsLeft + " " + target;
         }
     }
 
@@ -604,11 +505,9 @@ public class Soldier extends Unit {
             final var spaceToFill = refillTo - rc.getPaint();
             if (paintTowerInfo.getPaintAmount() >= spaceToFill) {
                 rc.move(dir);
-                // tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
-                final var totalSpace = 200 - rc.getPaint();
-                final var toTransfer = Math.min(paintTowerInfo.getPaintAmount(), totalSpace);
-                if (rc.canTransferPaint(paintTowerLoc, -toTransfer)) {
-                    rc.transferPaint(paintTowerLoc, -toTransfer);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                if (rc.canTransferPaint(paintTowerLoc, -spaceToFill)) {
+                    rc.transferPaint(paintTowerLoc, -spaceToFill);
                     yieldStrategy(true);
                 }
             }
