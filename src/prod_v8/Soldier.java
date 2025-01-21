@@ -1,7 +1,6 @@
 package prod_v8;
 
 import battlecode.common.*;
-import prod_latest.Soldier.EarlyGameStrategy.StrategyState;
 
 public class Soldier extends Unit {
     /**
