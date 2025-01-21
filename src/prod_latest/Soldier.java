@@ -204,7 +204,7 @@ public class Soldier extends Unit {
 
         @Override
         public void act() throws GameActionException {
-            if (target != null)`
+            if (target != null)
                 tryRefill(target);
 
             int startBytecodes = Clock.getBytecodeNum();
