@@ -198,83 +198,85 @@ public class Soldier extends Unit {
                 MapLocation loc = tile.getMapLocation();
                 MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
                 switch (diff.x * 1000 + diff.y) {
-                    case -4002: precompAppearsClear[0] |= 7182; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, -2)
-                    case -4001: precompAppearsClear[0] |= 14364; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, -1)
-                    case -4000: precompAppearsClear[0] |= 28728; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 0)
-                    case -3999: precompAppearsClear[0] |= 57456; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 1)
-                    case -3998: precompAppearsClear[0] |= 114912; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 2)
-                    case -3003: precompAppearsClear[0] |= 1838599; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, -3)
-                    case -3002: precompAppearsClear[0] |= 3677198; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, -2)
-                    case -3001: precompAppearsClear[0] |= 7354396; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, -1)
-                    case -3000: precompAppearsClear[0] |= 14708792; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, 0)
-                    case -2999: precompAppearsClear[0] |= 29417584; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, 1)
-                    case -2998: precompAppearsClear[0] |= 58835168; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, 2)
-                    case -2997: precompAppearsClear[0] |= 117670336; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, 3)
-                    case -2004: precompAppearsClear[0] |= 787968; precompAppearsClear[1] |= 3; precompAppearsClear[2] |= 0; break; // (-2, -4)
-                    case -2003: precompAppearsClear[0] |= 1838592; precompAppearsClear[1] |= 7; precompAppearsClear[2] |= 0; break; // (-2, -3)
-                    case -2002: precompAppearsClear[0] |= 3677184; precompAppearsClear[1] |= 14; precompAppearsClear[2] |= 0; break; // (-2, -2)
-                    case -2001: precompAppearsClear[0] |= 7354368; precompAppearsClear[1] |= 28; precompAppearsClear[2] |= 0; break; // (-2, -1)
-                    case -2000: precompAppearsClear[0] |= 14708736; precompAppearsClear[1] |= 56; precompAppearsClear[2] |= 0; break; // (-2, 0)
-                    case -1999: precompAppearsClear[0] |= 29417472; precompAppearsClear[1] |= 112; precompAppearsClear[2] |= 0; break; // (-2, 1)
-                    case -1998: precompAppearsClear[0] |= 58834944; precompAppearsClear[1] |= 224; precompAppearsClear[2] |= 0; break; // (-2, 2)
-                    case -1997: precompAppearsClear[0] |= 117669888; precompAppearsClear[1] |= 448; precompAppearsClear[2] |= 0; break; // (-2, 3)
-                    case -1996: precompAppearsClear[0] |= 100859904; precompAppearsClear[1] |= 384; precompAppearsClear[2] |= 0; break; // (-2, 4)
-                    case -1004: precompAppearsClear[0] |= 786432; precompAppearsClear[1] |= 1539; precompAppearsClear[2] |= 0; break; // (-1, -4)
-                    case -1003: precompAppearsClear[0] |= 1835008; precompAppearsClear[1] |= 3591; precompAppearsClear[2] |= 0; break; // (-1, -3)
-                    case -1002: precompAppearsClear[0] |= 3670016; precompAppearsClear[1] |= 7182; precompAppearsClear[2] |= 0; break; // (-1, -2)
-                    case -1001: precompAppearsClear[0] |= 7340032; precompAppearsClear[1] |= 14364; precompAppearsClear[2] |= 0; break; // (-1, -1)
-                    case -1000: precompAppearsClear[0] |= 14680064; precompAppearsClear[1] |= 28728; precompAppearsClear[2] |= 0; break; // (-1, 0)
-                    case -999: precompAppearsClear[0] |= 29360128; precompAppearsClear[1] |= 57456; precompAppearsClear[2] |= 0; break; // (-1, 1)
-                    case -998: precompAppearsClear[0] |= 58720256; precompAppearsClear[1] |= 114912; precompAppearsClear[2] |= 0; break; // (-1, 2)
-                    case -997: precompAppearsClear[0] |= 117440512; precompAppearsClear[1] |= 229824; precompAppearsClear[2] |= 0; break; // (-1, 3)
-                    case -996: precompAppearsClear[0] |= 100663296; precompAppearsClear[1] |= 196992; precompAppearsClear[2] |= 0; break; // (-1, 4)
-                    case -4: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 787971; precompAppearsClear[2] |= 0; break; // (0, -4)
-                    case -3: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 1838599; precompAppearsClear[2] |= 0; break; // (0, -3)
-                    case -2: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3677198; precompAppearsClear[2] |= 0; break; // (0, -2)
-                    case -1: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 7354396; precompAppearsClear[2] |= 0; break; // (0, -1)
-                    case 0: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 14708792; precompAppearsClear[2] |= 0; break; // (0, 0)
-                    case 1: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 29417584; precompAppearsClear[2] |= 0; break; // (0, 1)
-                    case 2: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 58835168; precompAppearsClear[2] |= 0; break; // (0, 2)
-                    case 3: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 117670336; precompAppearsClear[2] |= 0; break; // (0, 3)
-                    case 4: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 100860288; precompAppearsClear[2] |= 0; break; // (0, 4)
-                    case 996: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 787968; precompAppearsClear[2] |= 3; break; // (1, -4)
-                    case 997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 1838592; precompAppearsClear[2] |= 7; break; // (1, -3)
-                    case 998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3677184; precompAppearsClear[2] |= 14; break; // (1, -2)
-                    case 999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 7354368; precompAppearsClear[2] |= 28; break; // (1, -1)
-                    case 1000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 14708736; precompAppearsClear[2] |= 56; break; // (1, 0)
-                    case 1001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 29417472; precompAppearsClear[2] |= 112; break; // (1, 1)
-                    case 1002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 58834944; precompAppearsClear[2] |= 224; break; // (1, 2)
-                    case 1003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 117669888; precompAppearsClear[2] |= 448; break; // (1, 3)
-                    case 1004: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 100859904; precompAppearsClear[2] |= 384; break; // (1, 4)
-                    case 1996: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 786432; precompAppearsClear[2] |= 1539; break; // (2, -4)
-                    case 1997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 1835008; precompAppearsClear[2] |= 3591; break; // (2, -3)
-                    case 1998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3670016; precompAppearsClear[2] |= 7182; break; // (2, -2)
-                    case 1999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 7340032; precompAppearsClear[2] |= 14364; break; // (2, -1)
-                    case 2000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 14680064; precompAppearsClear[2] |= 28728; break; // (2, 0)
-                    case 2001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 29360128; precompAppearsClear[2] |= 57456; break; // (2, 1)
-                    case 2002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 58720256; precompAppearsClear[2] |= 114912; break; // (2, 2)
-                    case 2003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 117440512; precompAppearsClear[2] |= 229824; break; // (2, 3)
-                    case 2004: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 100663296; precompAppearsClear[2] |= 196992; break; // (2, 4)
-                    case 2997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 1838599; break; // (3, -3)
-                    case 2998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 3677198; break; // (3, -2)
-                    case 2999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 7354396; break; // (3, -1)
-                    case 3000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 14708792; break; // (3, 0)
-                    case 3001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 29417584; break; // (3, 1)
-                    case 3002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 58835168; break; // (3, 2)
-                    case 3003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 117670336; break; // (3, 3)
-                    case 3998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 3677184; break; // (4, -2)
-                    case 3999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 7354368; break; // (4, -1)
-                    case 4000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 14708736; break; // (4, 0)
-                    case 4001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 29417472; break; // (4, 1)
-                    case 4002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 58834944; break; // (4, 2)
-                }}
+                    case -4002: precompAppearsClear[0] |= 8142367; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, -2)
+                    case -4001: precompAppearsClear[0] |= 16284734; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, -1)
+                    case -4000: precompAppearsClear[0] |= 32569468; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 0)
+                    case -3999: precompAppearsClear[0] |= 65138936; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 1)
+                    case -3998: precompAppearsClear[0] |= 130277872; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 2)
+                    case -3003: precompAppearsClear[0] |= 3939855; precompAppearsClear[1] |= 15; precompAppearsClear[2] |= 0; break; // (-3, -3)
+                    case -3002: precompAppearsClear[0] |= 8142367; precompAppearsClear[1] |= 31; precompAppearsClear[2] |= 0; break; // (-3, -2)
+                    case -3001: precompAppearsClear[0] |= 16284734; precompAppearsClear[1] |= 62; precompAppearsClear[2] |= 0; break; // (-3, -1)
+                    case -3000: precompAppearsClear[0] |= 32569468; precompAppearsClear[1] |= 124; precompAppearsClear[2] |= 0; break; // (-3, 0)
+                    case -2999: precompAppearsClear[0] |= 65138936; precompAppearsClear[1] |= 248; precompAppearsClear[2] |= 0; break; // (-3, 1)
+                    case -2998: precompAppearsClear[0] |= 130277872; precompAppearsClear[1] |= 496; precompAppearsClear[2] |= 0; break; // (-3, 2)
+                    case -2997: precompAppearsClear[0] |= 126075360; precompAppearsClear[1] |= 480; precompAppearsClear[2] |= 0; break; // (-3, 3)
+                    case -2004: precompAppearsClear[0] |= 1838599; precompAppearsClear[1] |= 3591; precompAppearsClear[2] |= 0; break; // (-2, -4)
+                    case -2003: precompAppearsClear[0] |= 3939855; precompAppearsClear[1] |= 7695; precompAppearsClear[2] |= 0; break; // (-2, -3)
+                    case -2002: precompAppearsClear[0] |= 8142367; precompAppearsClear[1] |= 15903; precompAppearsClear[2] |= 0; break; // (-2, -2)
+                    case -2001: precompAppearsClear[0] |= 16284734; precompAppearsClear[1] |= 31806; precompAppearsClear[2] |= 0; break; // (-2, -1)
+                    case -2000: precompAppearsClear[0] |= 32569468; precompAppearsClear[1] |= 63612; precompAppearsClear[2] |= 0; break; // (-2, 0)
+                    case -1999: precompAppearsClear[0] |= 65138936; precompAppearsClear[1] |= 127224; precompAppearsClear[2] |= 0; break; // (-2, 1)
+                    case -1998: precompAppearsClear[0] |= 130277872; precompAppearsClear[1] |= 254448; precompAppearsClear[2] |= 0; break; // (-2, 2)
+                    case -1997: precompAppearsClear[0] |= 126075360; precompAppearsClear[1] |= 246240; precompAppearsClear[2] |= 0; break; // (-2, 3)
+                    case -1996: precompAppearsClear[0] |= 117670336; precompAppearsClear[1] |= 229824; precompAppearsClear[2] |= 0; break; // (-2, 4)
+                    case -1004: precompAppearsClear[0] |= 1838592; precompAppearsClear[1] |= 1838599; precompAppearsClear[2] |= 0; break; // (-1, -4)
+                    case -1003: precompAppearsClear[0] |= 3939840; precompAppearsClear[1] |= 3939855; precompAppearsClear[2] |= 0; break; // (-1, -3)
+                    case -1002: precompAppearsClear[0] |= 8142336; precompAppearsClear[1] |= 8142367; precompAppearsClear[2] |= 0; break; // (-1, -2)
+                    case -1001: precompAppearsClear[0] |= 16284672; precompAppearsClear[1] |= 16284734; precompAppearsClear[2] |= 0; break; // (-1, -1)
+                    case -1000: precompAppearsClear[0] |= 32569344; precompAppearsClear[1] |= 32569468; precompAppearsClear[2] |= 0; break; // (-1, 0)
+                    case -999: precompAppearsClear[0] |= 65138688; precompAppearsClear[1] |= 65138936; precompAppearsClear[2] |= 0; break; // (-1, 1)
+                    case -998: precompAppearsClear[0] |= 130277376; precompAppearsClear[1] |= 130277872; precompAppearsClear[2] |= 0; break; // (-1, 2)
+                    case -997: precompAppearsClear[0] |= 126074880; precompAppearsClear[1] |= 126075360; precompAppearsClear[2] |= 0; break; // (-1, 3)
+                    case -996: precompAppearsClear[0] |= 117669888; precompAppearsClear[1] |= 117670336; precompAppearsClear[2] |= 0; break; // (-1, 4)
+                    case -4: precompAppearsClear[0] |= 1835008; precompAppearsClear[1] |= 1838599; precompAppearsClear[2] |= 7; break; // (0, -4)
+                    case -3: precompAppearsClear[0] |= 3932160; precompAppearsClear[1] |= 3939855; precompAppearsClear[2] |= 15; break; // (0, -3)
+                    case -2: precompAppearsClear[0] |= 8126464; precompAppearsClear[1] |= 8142367; precompAppearsClear[2] |= 31; break; // (0, -2)
+                    case -1: precompAppearsClear[0] |= 16252928; precompAppearsClear[1] |= 16284734; precompAppearsClear[2] |= 62; break; // (0, -1)
+                    case 0: precompAppearsClear[0] |= 32505856; precompAppearsClear[1] |= 32569468; precompAppearsClear[2] |= 124; break; // (0, 0)
+                    case 1: precompAppearsClear[0] |= 65011712; precompAppearsClear[1] |= 65138936; precompAppearsClear[2] |= 248; break; // (0, 1)
+                    case 2: precompAppearsClear[0] |= 130023424; precompAppearsClear[1] |= 130277872; precompAppearsClear[2] |= 496; break; // (0, 2)
+                    case 3: precompAppearsClear[0] |= 125829120; precompAppearsClear[1] |= 126075360; precompAppearsClear[2] |= 480; break; // (0, 3)
+                    case 4: precompAppearsClear[0] |= 117440512; precompAppearsClear[1] |= 117670336; precompAppearsClear[2] |= 448; break; // (0, 4)
+                    case 996: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 1838599; precompAppearsClear[2] |= 3591; break; // (1, -4)
+                    case 997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3939855; precompAppearsClear[2] |= 7695; break; // (1, -3)
+                    case 998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 8142367; precompAppearsClear[2] |= 15903; break; // (1, -2)
+                    case 999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 16284734; precompAppearsClear[2] |= 31806; break; // (1, -1)
+                    case 1000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 32569468; precompAppearsClear[2] |= 63612; break; // (1, 0)
+                    case 1001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 65138936; precompAppearsClear[2] |= 127224; break; // (1, 1)
+                    case 1002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 130277872; precompAppearsClear[2] |= 254448; break; // (1, 2)
+                    case 1003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 126075360; precompAppearsClear[2] |= 246240; break; // (1, 3)
+                    case 1004: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 117670336; precompAppearsClear[2] |= 229824; break; // (1, 4)
+                    case 1996: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 1838592; precompAppearsClear[2] |= 1838599; break; // (2, -4)
+                    case 1997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3939840; precompAppearsClear[2] |= 3939855; break; // (2, -3)
+                    case 1998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 8142336; precompAppearsClear[2] |= 8142367; break; // (2, -2)
+                    case 1999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 16284672; precompAppearsClear[2] |= 16284734; break; // (2, -1)
+                    case 2000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 32569344; precompAppearsClear[2] |= 32569468; break; // (2, 0)
+                    case 2001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 65138688; precompAppearsClear[2] |= 65138936; break; // (2, 1)
+                    case 2002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 130277376; precompAppearsClear[2] |= 130277872; break; // (2, 2)
+                    case 2003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 126074880; precompAppearsClear[2] |= 126075360; break; // (2, 3)
+                    case 2004: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 117669888; precompAppearsClear[2] |= 117670336; break; // (2, 4)
+                    case 2997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3932160; precompAppearsClear[2] |= 3939855; break; // (3, -3)
+                    case 2998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 8126464; precompAppearsClear[2] |= 8142367; break; // (3, -2)
+                    case 2999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 16252928; precompAppearsClear[2] |= 16284734; break; // (3, -1)
+                    case 3000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 32505856; precompAppearsClear[2] |= 32569468; break; // (3, 0)
+                    case 3001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 65011712; precompAppearsClear[2] |= 65138936; break; // (3, 1)
+                    case 3002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 130023424; precompAppearsClear[2] |= 130277872; break; // (3, 2)
+                    case 3003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 125829120; precompAppearsClear[2] |= 126075360; break; // (3, 3)
+                    case 3998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 8142367; break; // (4, -2)
+                    case 3999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 16284734; break; // (4, -1)
+                    case 4000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 32569468; break; // (4, 0)
+                    case 4001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 65138936; break; // (4, 1)
+                    case 4002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 130277872; break; // (4, 2)
+                }
+            }
         }
 
         boolean patternAppearsClear(MapLocation center) throws GameActionException {
             MapLocation diff = center.translate(-locBeforeTurn.x, -locBeforeTurn.y);
             int x = diff.x + 4;
             int y = diff.y + 4;
-            return (1 & (precompAppearsClear[x / 3] << (9 * (x % 3) + y))) == 0;
+            // System.out.println((1 & (precompAppearsClear[x / 3] >> (9 * (x % 3) + y))) == 0);
+            return (1 & (precompAppearsClear[x / 3] >> (9 * (x % 3) + y))) == 0;
         }
 
         boolean knowsIsBadSrpCenter(MapLocation center) throws GameActionException {
@@ -309,7 +311,7 @@ public class Soldier extends Unit {
                 MapLocation ruinLoc = null;
                 for (int i = nearbyRuins.length; --i >= 0;) {
                     MapLocation loc = nearbyRuins[i];
-                    if (rc.senseRobotAtLocation(loc) == null) {
+                    if (rc.canSenseLocation(loc) && rc.senseRobotAtLocation(loc) == null) {
                         ruinLoc = loc;
                     }
                 }
@@ -355,6 +357,10 @@ public class Soldier extends Unit {
             if (buildingRuin) {
                 var ruinLoc = target;
                 // Check if it's already been finished
+                if (!patternAppearsClear(ruinLoc)) {
+                    buildingRuin = false;
+                    return;
+                }
                 if (rc.canSenseRobotAtLocation(ruinLoc)) {
                     var robotInfo = rc.senseRobotAtLocation(ruinLoc);
                     if (robotInfo.team.equals(myTeam)) {
