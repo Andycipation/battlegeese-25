@@ -256,7 +256,7 @@ public class Globals {
         return false;
     }
 
-    public static PaintType getTowerPaintColor(MapLocation center, MapLocation loc, UnitType towerType) throws GameActionException {
+    public static PaintType getTowerPaintColor(MapLocation center, MapLocation loc, UnitType towerType) {
         if (!withinPattern(center, loc)) {
             return PaintType.ALLY_PRIMARY;
         }
@@ -271,11 +271,11 @@ public class Globals {
         return useSecondary ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY;
     }
 
-    public static boolean getSrpUseSecondary(MapLocation loc) throws GameActionException {
+    public static boolean getSrpUseSecondary(MapLocation loc) {
         return resourcePattern[loc.x % 4][loc.y % 4];
     }
 
-    public static PaintType getSrpPaintColor(MapLocation loc) throws GameActionException {
+    public static PaintType getSrpPaintColor(MapLocation loc) {
         return (getSrpUseSecondary(loc) ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY);
     }
 
