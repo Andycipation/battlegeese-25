@@ -361,9 +361,16 @@ public class Tower extends Robot {
                 tryBuildUnit(UnitType.SOLDIER);
                 return;
             }
-            if ((rc.getRoundNum() > 300 && rc.getPaint() >= 800) || (rc.getChips() > 1300 && rc.getPaint() >= 300)) {
-                // Pick random unit to build (with weights)
-                tryBuildRandomUnit(20, numTowers, numTowers);
+            if (isPaintTower(rc.getType())) {
+                if ((rc.getRoundNum() > 300 && rc.getPaint() >= 800) || (rc.getChips() > 1400 && rc.getPaint() >= 300)) {
+                    // Pick random unit to build (with weights)
+                    tryBuildRandomUnit(20, numTowers, numTowers);
+                }
+            } 
+            else { // defense or money towers can always just produce units given theres enough chips :)
+                if (rc.getChips() > 1400) {
+                    tryBuildRandomUnit(20, numTowers, numTowers);
+                }
             }
         }
 
