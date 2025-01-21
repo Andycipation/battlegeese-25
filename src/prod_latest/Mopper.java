@@ -180,6 +180,45 @@ public class Mopper extends Unit {
         upgradeTowers();
     }
     
+    boolean trySweep() throws GameActionException {
+        int[] dir_counts = new int[8];
+
+        MapLocation my_loc = rc.getLocation();
+
+        for(int i = nearbyMapInfos.length; --i >= 0;) {
+            MapInfo tile = nearbyMapInfos[i];
+            MapLocation loc = tile.getMapLocation();
+
+            if(my_loc.isAdjacentTo(loc)) {
+                RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
+                if(robotInfo != null && robotInfo.getTeam() != rc.getTeam()) {
+                    assert(my_loc != loc);
+                    dir_counts[my_loc.directionTo(loc).getDirectionOrderNum() % 8]++;
+                }
+            }
+        }
+
+        // Find an ordinal direction where there are 3 enemy robots
+        Direction dir = null;
+        Direction[] ord_dirs = {Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH};
+
+        for(int i = 0; i < 8; i += 2) {
+            if(dir_counts[i] + dir_counts[i + 1] + dir_counts[(i + 2) % 8] == 3) {
+                dir = ord_dirs[i / 2];
+                break;
+            }
+        }
+
+        if(dir != null) {
+            if(rc.canMopSwing(dir)) {
+                rc.mopSwing(dir);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     abstract static class MopperStrategy extends Mopper {
         abstract public void act() throws GameActionException;
     }
@@ -193,6 +232,8 @@ public class Mopper extends Unit {
     
         @Override
         public void act() throws GameActionException {
+            trySweep();
+
             if (cleanRuinCoolDown-- <= 0) {
                 for (int i = nearbyMapInfos.length; --i >= 0;) {
                     MapInfo tile = nearbyMapInfos[i];
@@ -349,6 +390,16 @@ public class Mopper extends Unit {
             if (informedEmptyPaintLoc != null) {
                 switchStrategy(new CampFrontier());
                 return ;
+            }
+
+            trySweep();
+            
+            for (int i = nearbyEnemyRobots.length; --i >= 0;) {
+                RobotInfo robot = nearbyEnemyRobots[i];
+                if (rc.canAttack(robot.location)) {
+                    rc.attack(robot.location);
+                    break;
+                }
             }
 
             tryAttackEnemyRobot();

@@ -57,7 +57,7 @@ public class RobotPlayer extends Globals {
 
         if (startRound != endRound) {
             System.out.println(rc.getLocation() + " " + rc.getType() + " Bytecode overflow: " + usedBytecodes + " (" + bytecodePercentage + "%)");
-        } else if (bytecodePercentage > 80) {
+        } else if (bytecodePercentage > 90) {
             System.out.println(rc.getLocation() + " " + rc.getType() + " High bytecode usage: " + usedBytecodes + " (" + bytecodePercentage + "%)");
         }
     }

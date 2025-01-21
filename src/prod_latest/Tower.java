@@ -80,9 +80,9 @@ public class Tower extends Robot {
 
     static class CommsStrategyV1 extends CommsStrategy {
 
-        public static CircularBuffer<MapLocation> sensedEmptyLocs = new CircularBuffer<MapLocation>(3);
-        public static CircularBuffer<MapLocation> sensedEnemyLocs = new CircularBuffer<MapLocation>(3);
-        public static int UNDETECTED_LEVEL = 10;
+        public static CircularBuffer<MapLocation> sensedEmptyLocs = new CircularBuffer<>(3);
+        public static CircularBuffer<MapLocation> sensedEnemyLocs = new CircularBuffer<>(3);
+        public static final int UNDETECTED_LEVEL = 10;
         public static int emptyLevel = UNDETECTED_LEVEL;
         public static int enemyLevel = UNDETECTED_LEVEL;
         private static class Letter {
@@ -202,7 +202,7 @@ public class Tower extends Robot {
             int numLetters = letters.length;
     
             // dispatch letters to send
-            FastMap<MapLocation> idToLoc = new FastMap<MapLocation>(100);
+            FastMap<MapLocation> idToLoc = new FastMap<>(100);
             for (int i = nearbyAllyRobots.length; --i >= 0;) {
                 RobotInfo robot = nearbyAllyRobots[i];
                 idToLoc.add((char)robot.getID(), robot.getLocation());

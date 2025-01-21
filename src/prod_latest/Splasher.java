@@ -12,14 +12,15 @@ public class Splasher extends Unit {
         strategy = newStrategy;
     }
 
-    public static void yieldStrategy() {
+    public static void yieldStrategy(boolean acted) throws GameActionException{
         strategy = new ExploreStrategy(15);
+        if (!acted) strategy.act();
     }
 
     @Override
     void play() throws GameActionException {
         if (strategy == null) {
-            yieldStrategy();
+            yieldStrategy(false);
         }
         strategy.act();
         Logger.log(strategy.toString());
@@ -134,7 +135,7 @@ public class Splasher extends Unit {
                 MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
                 int x = diff.x + 2;
                 int y = diff.y + 2;
-                if (memory[loc.x][loc.y] == MapLocationType.PASSABLE && points[x][y] > bestAttackPoints) {
+                if (tile.isPassable() && points[x][y] > bestAttackPoints) {
                     bestAttackPoints = points[x][y];
                     bestAttackLoc = loc;
                 }
@@ -146,38 +147,18 @@ public class Splasher extends Unit {
             }
             else if (bestAttackPoints == 0) {
                 // no suitable target; yield
-                yieldStrategy();
+                yieldStrategy(false);
                 return;
             }
             else {
                 // fix this later
                 if (informedEnemyPaintLoc != null) {
-                    Direction dirTo = locBeforeTurn.directionTo(informedEmptyPaintLoc);
+                    Direction dirTo = locBeforeTurn.directionTo(informedEnemyPaintLoc);
                     if (!rc.senseMapInfo(locBeforeTurn.add(dirTo)).getPaint().isEnemy()) {
-                        BugNav.moveToward(informedEmptyPaintLoc);
+                        BugNav.moveToward(informedEnemyPaintLoc);
                     }
-                    
                 }
             }
-            
-            MapLocation nextTarget = null;
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                MapInfo tile = nearbyMapInfos[i];
-                MapLocation loc = tile.getMapLocation();
-                if (tile.getPaint().isEnemy()) {
-                    nextTarget = loc;
-                    break;
-                }
-            }
-    
-            if (nextTarget == null) {
-                yieldStrategy();
-                return;
-            }
-            if (!nextTarget.isAdjacentTo(locBeforeTurn)) {
-                BugNav.moveToward(nextTarget);
-            }
-            
         }
 
         public String toString() {
@@ -216,14 +197,14 @@ public class Splasher extends Unit {
             if (rc.getLocation() == locBeforeTurn) {
                 turnsNotMoved++;
                 if (turnsNotMoved >= 3) {
-                    yieldStrategy();
+                    yieldStrategy(true);
                     return;
                 }
             }
             else turnsNotMoved = 0;
             turnsLeft--;
             if (turnsLeft <= 0) { // if turn counter is up, also yield
-                yieldStrategy();
+                yieldStrategy(true);
                 return;
             }
         }

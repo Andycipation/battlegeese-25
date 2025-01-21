@@ -42,9 +42,9 @@ public abstract class Unit extends Robot {
      * Here we can record new information, update robot state, etc...
      */
     void initTurn() throws GameActionException {
-        if (memory == null) {
-            memory = new MapLocationType[mapWidth][mapHeight];
-        }
+        // if (memory == null) {
+        //     memory = new MapLocationType[mapWidth][mapHeight];
+        // }
         super.initTurn();
         for (int i = nearbyAllyRobots.length; --i >= 0;) {
             var info = nearbyAllyRobots[i];
@@ -53,11 +53,11 @@ public abstract class Unit extends Robot {
             }
         }
 
-        for (int i = nearbyMapInfos.length; --i >= 0;) {
-            MapInfo tile = nearbyMapInfos[i];
-            MapLocation loc = tile.getMapLocation();
-            memory[loc.x][loc.y] = tile.isPassable() ? MapLocationType.PASSABLE : (tile.isWall() ? MapLocationType.WALL : MapLocationType.RUIN);
-        }
+        // for (int i = nearbyMapInfos.length; --i >= 0;) {
+        //     MapInfo tile = nearbyMapInfos[i];
+        //     MapLocation loc = tile.getMapLocation();
+        //     memory[loc.x][loc.y] = tile.isPassable() ? MapLocationType.PASSABLE : (tile.isWall() ? MapLocationType.WALL : MapLocationType.RUIN);
+        // }
 
         for (int i = nearbyMapInfos.length; --i >= 0;) {
             MapInfo tile = nearbyMapInfos[i];
@@ -147,7 +147,7 @@ public abstract class Unit extends Robot {
     void upgradeTowers() throws GameActionException {
         for (int i = nearbyAllyRobots.length; --i >= 0;)  {
             RobotInfo robotInfo = nearbyAllyRobots[i];
-            if (robotInfo.type.canUpgradeType()) {
+            if (robotInfo.type.canUpgradeType() && rc.getChips() > 10000) {
                 if (rc.canUpgradeTower(robotInfo.location)) {
                     rc.upgradeTower(robotInfo.location);
                 }
