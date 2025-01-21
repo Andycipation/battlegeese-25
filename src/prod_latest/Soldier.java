@@ -167,6 +167,7 @@ public class Soldier extends Unit {
         public static MapLocation target;
         boolean buildingRuin;
         boolean buildingSrp;
+        static int precompAppearsClear[];
 
         ExploreStrategy(MapLocation _target) {
             target = _target;
@@ -187,17 +188,93 @@ public class Soldier extends Unit {
             };
         }
 
-        boolean patternAppearsClear(MapLocation center) throws GameActionException {
-            // Returns true if the 5x5 square centered at `center` does not have any enemy paint according to nearbyMapInfos
+        void precomputePatternAppearsClear() {
+            precompAppearsClear = new int[3];
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 MapInfo tile = nearbyMapInfos[i];
-                MapLocation loc = tile.getMapLocation();
-                if (withinPattern(center, loc)
-                        && (tile.getPaint().isEnemy() || tile.isWall())) {
-                    return false;
+                if (!tile.getPaint().isEnemy() && !tile.isWall()) {
+                    continue;
                 }
-            }
-            return true;
+                MapLocation loc = tile.getMapLocation();
+                MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
+                switch (diff.x * 1000 + diff.y) {
+                    case -4002: precompAppearsClear[0] |= 7182; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, -2)
+                    case -4001: precompAppearsClear[0] |= 14364; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, -1)
+                    case -4000: precompAppearsClear[0] |= 28728; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 0)
+                    case -3999: precompAppearsClear[0] |= 57456; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 1)
+                    case -3998: precompAppearsClear[0] |= 114912; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-4, 2)
+                    case -3003: precompAppearsClear[0] |= 1838599; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, -3)
+                    case -3002: precompAppearsClear[0] |= 3677198; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, -2)
+                    case -3001: precompAppearsClear[0] |= 7354396; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, -1)
+                    case -3000: precompAppearsClear[0] |= 14708792; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, 0)
+                    case -2999: precompAppearsClear[0] |= 29417584; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, 1)
+                    case -2998: precompAppearsClear[0] |= 58835168; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, 2)
+                    case -2997: precompAppearsClear[0] |= 117670336; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 0; break; // (-3, 3)
+                    case -2004: precompAppearsClear[0] |= 787968; precompAppearsClear[1] |= 3; precompAppearsClear[2] |= 0; break; // (-2, -4)
+                    case -2003: precompAppearsClear[0] |= 1838592; precompAppearsClear[1] |= 7; precompAppearsClear[2] |= 0; break; // (-2, -3)
+                    case -2002: precompAppearsClear[0] |= 3677184; precompAppearsClear[1] |= 14; precompAppearsClear[2] |= 0; break; // (-2, -2)
+                    case -2001: precompAppearsClear[0] |= 7354368; precompAppearsClear[1] |= 28; precompAppearsClear[2] |= 0; break; // (-2, -1)
+                    case -2000: precompAppearsClear[0] |= 14708736; precompAppearsClear[1] |= 56; precompAppearsClear[2] |= 0; break; // (-2, 0)
+                    case -1999: precompAppearsClear[0] |= 29417472; precompAppearsClear[1] |= 112; precompAppearsClear[2] |= 0; break; // (-2, 1)
+                    case -1998: precompAppearsClear[0] |= 58834944; precompAppearsClear[1] |= 224; precompAppearsClear[2] |= 0; break; // (-2, 2)
+                    case -1997: precompAppearsClear[0] |= 117669888; precompAppearsClear[1] |= 448; precompAppearsClear[2] |= 0; break; // (-2, 3)
+                    case -1996: precompAppearsClear[0] |= 100859904; precompAppearsClear[1] |= 384; precompAppearsClear[2] |= 0; break; // (-2, 4)
+                    case -1004: precompAppearsClear[0] |= 786432; precompAppearsClear[1] |= 1539; precompAppearsClear[2] |= 0; break; // (-1, -4)
+                    case -1003: precompAppearsClear[0] |= 1835008; precompAppearsClear[1] |= 3591; precompAppearsClear[2] |= 0; break; // (-1, -3)
+                    case -1002: precompAppearsClear[0] |= 3670016; precompAppearsClear[1] |= 7182; precompAppearsClear[2] |= 0; break; // (-1, -2)
+                    case -1001: precompAppearsClear[0] |= 7340032; precompAppearsClear[1] |= 14364; precompAppearsClear[2] |= 0; break; // (-1, -1)
+                    case -1000: precompAppearsClear[0] |= 14680064; precompAppearsClear[1] |= 28728; precompAppearsClear[2] |= 0; break; // (-1, 0)
+                    case -999: precompAppearsClear[0] |= 29360128; precompAppearsClear[1] |= 57456; precompAppearsClear[2] |= 0; break; // (-1, 1)
+                    case -998: precompAppearsClear[0] |= 58720256; precompAppearsClear[1] |= 114912; precompAppearsClear[2] |= 0; break; // (-1, 2)
+                    case -997: precompAppearsClear[0] |= 117440512; precompAppearsClear[1] |= 229824; precompAppearsClear[2] |= 0; break; // (-1, 3)
+                    case -996: precompAppearsClear[0] |= 100663296; precompAppearsClear[1] |= 196992; precompAppearsClear[2] |= 0; break; // (-1, 4)
+                    case -4: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 787971; precompAppearsClear[2] |= 0; break; // (0, -4)
+                    case -3: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 1838599; precompAppearsClear[2] |= 0; break; // (0, -3)
+                    case -2: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3677198; precompAppearsClear[2] |= 0; break; // (0, -2)
+                    case -1: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 7354396; precompAppearsClear[2] |= 0; break; // (0, -1)
+                    case 0: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 14708792; precompAppearsClear[2] |= 0; break; // (0, 0)
+                    case 1: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 29417584; precompAppearsClear[2] |= 0; break; // (0, 1)
+                    case 2: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 58835168; precompAppearsClear[2] |= 0; break; // (0, 2)
+                    case 3: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 117670336; precompAppearsClear[2] |= 0; break; // (0, 3)
+                    case 4: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 100860288; precompAppearsClear[2] |= 0; break; // (0, 4)
+                    case 996: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 787968; precompAppearsClear[2] |= 3; break; // (1, -4)
+                    case 997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 1838592; precompAppearsClear[2] |= 7; break; // (1, -3)
+                    case 998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3677184; precompAppearsClear[2] |= 14; break; // (1, -2)
+                    case 999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 7354368; precompAppearsClear[2] |= 28; break; // (1, -1)
+                    case 1000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 14708736; precompAppearsClear[2] |= 56; break; // (1, 0)
+                    case 1001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 29417472; precompAppearsClear[2] |= 112; break; // (1, 1)
+                    case 1002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 58834944; precompAppearsClear[2] |= 224; break; // (1, 2)
+                    case 1003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 117669888; precompAppearsClear[2] |= 448; break; // (1, 3)
+                    case 1004: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 100859904; precompAppearsClear[2] |= 384; break; // (1, 4)
+                    case 1996: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 786432; precompAppearsClear[2] |= 1539; break; // (2, -4)
+                    case 1997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 1835008; precompAppearsClear[2] |= 3591; break; // (2, -3)
+                    case 1998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 3670016; precompAppearsClear[2] |= 7182; break; // (2, -2)
+                    case 1999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 7340032; precompAppearsClear[2] |= 14364; break; // (2, -1)
+                    case 2000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 14680064; precompAppearsClear[2] |= 28728; break; // (2, 0)
+                    case 2001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 29360128; precompAppearsClear[2] |= 57456; break; // (2, 1)
+                    case 2002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 58720256; precompAppearsClear[2] |= 114912; break; // (2, 2)
+                    case 2003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 117440512; precompAppearsClear[2] |= 229824; break; // (2, 3)
+                    case 2004: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 100663296; precompAppearsClear[2] |= 196992; break; // (2, 4)
+                    case 2997: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 1838599; break; // (3, -3)
+                    case 2998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 3677198; break; // (3, -2)
+                    case 2999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 7354396; break; // (3, -1)
+                    case 3000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 14708792; break; // (3, 0)
+                    case 3001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 29417584; break; // (3, 1)
+                    case 3002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 58835168; break; // (3, 2)
+                    case 3003: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 117670336; break; // (3, 3)
+                    case 3998: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 3677184; break; // (4, -2)
+                    case 3999: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 7354368; break; // (4, -1)
+                    case 4000: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 14708736; break; // (4, 0)
+                    case 4001: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 29417472; break; // (4, 1)
+                    case 4002: precompAppearsClear[0] |= 0; precompAppearsClear[1] |= 0; precompAppearsClear[2] |= 58834944; break; // (4, 2)
+                }}
+        }
+
+        boolean patternAppearsClear(MapLocation center) throws GameActionException {
+            MapLocation diff = center.translate(-locBeforeTurn.x, -locBeforeTurn.y);
+            int x = diff.x + 4;
+            int y = diff.y + 4;
+            return (1 & (precompAppearsClear[x / 3] << (9 * (x % 3) + y))) == 0;
         }
 
         boolean knowsIsBadSrpCenter(MapLocation center) throws GameActionException {
@@ -226,13 +303,13 @@ public class Soldier extends Unit {
             if (buildingRuin || buildingSrp) {
                 return;
             }
+            precomputePatternAppearsClear();
             if (rc.getNumberTowers() < 25 && rc.getChips() > 500) {
                 // Check for nearby ruins
                 MapLocation ruinLoc = null;
-                for (int i = nearbyMapInfos.length; --i >= 0;) {
-                    MapInfo tile = nearbyMapInfos[i];
-                    MapLocation loc = tile.getMapLocation();
-                    if (tile.hasRuin() && rc.canSenseLocation(loc) && rc.senseRobotAtLocation(loc) == null) {
+                for (int i = nearbyRuins.length; --i >= 0;) {
+                    MapLocation loc = nearbyRuins[i];
+                    if (rc.senseRobotAtLocation(loc) == null) {
                         ruinLoc = loc;
                     }
                 }
@@ -271,7 +348,9 @@ public class Soldier extends Unit {
 
         @Override
         public void act() throws GameActionException {
+            // System.out.println("Bytecodes used (1): " + Clock.getBytecodeNum());
             getProject();
+            // System.out.println("Bytecodes used (2): " + Clock.getBytecodeNum());
 
             if (buildingRuin) {
                 var ruinLoc = target;
@@ -279,6 +358,10 @@ public class Soldier extends Unit {
                 if (rc.canSenseRobotAtLocation(ruinLoc)) {
                     var robotInfo = rc.senseRobotAtLocation(ruinLoc);
                     if (robotInfo.team.equals(myTeam)) {
+                        int paintWanted = Math.min(rc.senseRobotAtLocation(ruinLoc).paintAmount, paintCapacity - rc.getPaint());
+                        if (rc.canTransferPaint(ruinLoc, -paintWanted)) {
+                            rc.transferPaint(ruinLoc, -paintWanted);
+                        }
                         buildingRuin = false;
                         return;
                     }
