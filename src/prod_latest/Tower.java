@@ -345,22 +345,25 @@ public class Tower extends Robot {
 
     static class MapSpawnStrategy extends SpawnStrategy {
 
+        public static void tryBuildRandomUnit(int soldierWeight, int splasherWeight, int mopperWeight) throws GameActionException {
+            UnitType unitPicked = switch (randChoice(soldierWeight, splasherWeight, mopperWeight)) {
+                case 0 -> UnitType.SOLDIER;
+                case 1 -> UnitType.SPLASHER;
+                default -> UnitType.MOPPER;
+            };
+            tryBuildUnit(unitPicked);
+        }
+
         @Override
         public void act() throws GameActionException {
-            if (unitsBuilt < 2 && towerNumAtSpawn <= 2) { // early game build soldier soldier
+            if (unitsBuilt < 2 && towerNumAtSpawn <= 2) {
+                // early game build soldier soldier
                 tryBuildUnit(UnitType.SOLDIER);
+                return;
             }
-            else if (rc.getChips() > 1300 && rc.getPaint() >= 300) { // can build any unit and still have chips left to make a tower
-                // pick random unit to build (with weights)
-                int soldierWeight = 20;
-                int splasherWeight = numTowers;
-                int mopperWeight = numTowers;
-                UnitType unitPicked = switch (randChoice(soldierWeight, splasherWeight, mopperWeight)) {
-                    case 0 -> UnitType.SOLDIER;
-                    case 1 -> UnitType.SPLASHER;
-                    default -> UnitType.MOPPER;
-                };
-                tryBuildUnit(unitPicked);
+            if ((rc.getRoundNum() > 300 && rc.getPaint() >= 800) || (rc.getChips() > 1300 && rc.getPaint() >= 300)) {
+                // Pick random unit to build (with weights)
+                tryBuildRandomUnit(20, numTowers, numTowers);
             }
         }
 
