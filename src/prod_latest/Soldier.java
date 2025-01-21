@@ -204,9 +204,8 @@ public class Soldier extends Unit {
 
         @Override
         public void act() throws GameActionException {
-            if (state == StrategyState.BUILDING_RUIN) {
+            if (target != null)`
                 tryRefill(target);
-            }
 
             int startBytecodes = Clock.getBytecodeNum();
             getProject();
