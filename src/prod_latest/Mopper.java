@@ -14,55 +14,7 @@ public class Mopper extends Unit {
         strategy = new ExploreStrategy(8, 6);
     }
 
-    public static boolean tryMoveToSafeTile() throws GameActionException {
-        Direction[] dirs = adjacentDirections.clone();
-        shuffleArray(dirs);
-        Direction bestDir = null;
-        int minPenalty = 1000;
-        for (int i = dirs.length; --i >= 0;) {
-            Direction dir = dirs[i];
-            MapLocation nxtLoc = rc.getLocation().add(dir);
-            if (!withinBounds(nxtLoc)) continue;
-            MapInfo tile = rc.senseMapInfo(nxtLoc);
-            if (tile.getPaint().isAlly() && rc.canMove(dir) && !inEnemyTowerRange(nxtLoc)) {
-                int penalty = numAllyAdjacent[dir.getDirectionOrderNum()];
-                if (penalty < minPenalty) {
-                    minPenalty = penalty;
-                    bestDir = dir;
-                }
-            }
-        }
-        if (bestDir != null) {
-            rc.move(bestDir);
-            return true;
-        }
-        return false;
-    }
 
-    public static boolean tryMoveLessSafeTile() throws GameActionException {
-        Direction[] dirs = adjacentDirections.clone();
-        shuffleArray(dirs);
-        Direction bestDir = null;
-        int minPenalty = 100;
-        for (int i = dirs.length; --i >= 0;) {
-            Direction dir = dirs[i];
-            MapLocation nxtLoc = rc.getLocation().add(dir);
-            if (!withinBounds(nxtLoc)) continue;
-            MapInfo tile = rc.senseMapInfo(nxtLoc);
-            if (!tile.getPaint().isEnemy() && rc.canMove(dir) && !inEnemyTowerRange(nxtLoc)) {
-                int penalty = numAllyAdjacent[dir.getDirectionOrderNum()];
-                if (penalty < minPenalty) {
-                    minPenalty = penalty;
-                    bestDir = dir;
-                }
-            }
-        }
-        if (bestDir != null) {
-            rc.move(bestDir);
-            return true;
-        }
-        return false;
-    }
 
     public static boolean tryAttackEnemyRobot() throws GameActionException {
         MapLocation attackLoc = null;
@@ -127,42 +79,11 @@ public class Mopper extends Unit {
         return false;
     }
 
-    public static boolean inEnemyTowerRange(MapLocation loc) throws GameActionException {
-        for (int i = nearbyEnemyRobots.length; --i >= 0;) {
-            RobotInfo robotInfo = nearbyEnemyRobots[i];
-            MapLocation enemyLoc = nearbyEnemyRobots[i].getLocation();
-            if (robotInfo.getType().isTowerType() && loc.isWithinDistanceSquared(enemyLoc, robotInfo.getType().actionRadiusSquared)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
-    public static boolean tryMoveToFrontier() throws GameActionException {
-        // Optional optimization, remove if degrades performance or uses excess bytecode
-        for (int i = adjacentDirections.length; --i >= 0;) {
-            Direction dir = adjacentDirections[i];
-            MapLocation nxtLoc = rc.getLocation().add(dir);
-            if (!withinBounds(nxtLoc)) continue;
-            MapInfo tile = rc.senseMapInfo(nxtLoc);
-            if (tile.getPaint().isEnemy()) {
-                informedEmptyPaintLoc = nxtLoc;
-                break;
-            }
-        }
-        if (informedEnemyPaintLoc != null) {
-            Direction dir = BugNav.getDirectionToMove(informedEnemyPaintLoc);
-            if (dir != null && rc.canMove(dir)) {
-                MapLocation nxtLoc = rc.getLocation().add(dir);
-                MapInfo tile = rc.senseMapInfo(nxtLoc);
-                if (!tile.getPaint().isEnemy() && !inEnemyTowerRange(nxtLoc)) {
-                    rc.move(dir);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+
+
+
+
 
     @Override
     void play() throws GameActionException {
@@ -179,8 +100,8 @@ public class Mopper extends Unit {
         // also wanna upgrade towers nearby if possible
         upgradeTowers();
     }
-    
-    boolean trySweep() throws GameActionException {
+
+    public static boolean trySweep() throws GameActionException {
         int[] dir_counts = new int[8];
 
         MapLocation my_loc = rc.getLocation();
@@ -203,7 +124,7 @@ public class Mopper extends Unit {
         Direction[] ord_dirs = {Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH};
 
         for(int i = 0; i < 8; i += 2) {
-            if(dir_counts[i] + dir_counts[i + 1] + dir_counts[(i + 2) % 8] == 3) {
+            if(dir_counts[i] + dir_counts[i + 1] + dir_counts[(i + 2) % 8] >= 1) {
                 dir = ord_dirs[i / 2];
                 break;
             }
@@ -212,6 +133,7 @@ public class Mopper extends Unit {
         if(dir != null) {
             if(rc.canMopSwing(dir)) {
                 rc.mopSwing(dir);
+                rc.setTimelineMarker("SWEEP", 0, 255, 0);
                 return true;
             }
         }
@@ -515,6 +437,8 @@ public class Mopper extends Unit {
             tryMoveToSafeTile();
 
             tryMoveLessSafeTile();
+
+            // trySweep();
 
             tryAttackEnemyRobot();
 

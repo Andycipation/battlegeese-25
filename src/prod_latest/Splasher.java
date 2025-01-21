@@ -151,13 +151,11 @@ public class Splasher extends Unit {
                 return;
             }
             else {
-                // fix this later
-                if (informedEnemyPaintLoc != null) {
-                    Direction dirTo = locBeforeTurn.directionTo(informedEnemyPaintLoc);
-                    if (!rc.senseMapInfo(locBeforeTurn.add(dirTo)).getPaint().isEnemy()) {
-                        BugNav.moveToward(informedEnemyPaintLoc);
-                    }
-                }
+                tryMoveToFrontier();
+
+                tryMoveToSafeTile();
+    
+                tryMoveLessSafeTile();
             }
         }
 
@@ -193,7 +191,14 @@ public class Splasher extends Unit {
                 }
             }
 
-            BugNav.moveToward(target);
+            // BugNav.moveToward(target);
+
+            tryMoveToFrontier();
+
+            tryMoveToSafeTile();
+
+            tryMoveLessSafeTile();
+
             if (rc.getLocation() == locBeforeTurn) {
                 turnsNotMoved++;
                 if (turnsNotMoved >= 3) {

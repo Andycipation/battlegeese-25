@@ -283,4 +283,6 @@ public class Globals {
         return loc.x % 4 == 2 && loc.y % 4 == 2;
     }
 
+    
+
 }

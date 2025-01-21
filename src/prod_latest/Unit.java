@@ -154,4 +154,100 @@ public abstract class Unit extends Robot {
             }
         }
     }
+
+
+    public static boolean tryMoveToFrontier() throws GameActionException {
+        MapLocation attackLoc = informedEnemyPaintLoc;
+
+        if (rc.getLocation().isWithinDistanceSquared(attackLoc, visionRadiusSquared) 
+        && rc.senseMapInfo(attackLoc).getPaint() == PaintType.EMPTY) {
+            attackLoc = null;
+        }
+
+        // Optional optimization, remove if degrades performance or uses excess bytecode
+        for (int i = adjacentDirections.length; --i >= 0;) {
+            Direction dir = adjacentDirections[i];
+            MapLocation nxtLoc = rc.getLocation().add(dir);
+            if (!withinBounds(nxtLoc)) continue;
+            MapInfo tile = rc.senseMapInfo(nxtLoc);
+            if (tile.getPaint().isEnemy()) {
+                attackLoc = nxtLoc;
+                break;
+            }
+        }
+
+        if (attackLoc != null) {
+            Direction dir = BugNav.getDirectionToMove(attackLoc);
+            if (dir != null && rc.canMove(dir)) {
+                MapLocation nxtLoc = rc.getLocation().add(dir);
+                MapInfo tile = rc.senseMapInfo(nxtLoc);
+                if (!tile.getPaint().isEnemy() && !inEnemyTowerRange(nxtLoc)) {
+                    rc.move(dir);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean inEnemyTowerRange(MapLocation loc) throws GameActionException {
+        for (int i = nearbyEnemyRobots.length; --i >= 0;) {
+            RobotInfo robotInfo = nearbyEnemyRobots[i];
+            MapLocation enemyLoc = nearbyEnemyRobots[i].getLocation();
+            if (robotInfo.getType().isTowerType() && loc.isWithinDistanceSquared(enemyLoc, robotInfo.getType().actionRadiusSquared)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean tryMoveToSafeTile() throws GameActionException {
+        Direction[] dirs = adjacentDirections.clone();
+        shuffleArray(dirs);
+        Direction bestDir = null;
+        int minPenalty = 1000;
+        for (int i = dirs.length; --i >= 0;) {
+            Direction dir = dirs[i];
+            MapLocation nxtLoc = rc.getLocation().add(dir);
+            if (!withinBounds(nxtLoc)) continue;
+            MapInfo tile = rc.senseMapInfo(nxtLoc);
+            if (tile.getPaint().isAlly() && rc.canMove(dir) && !inEnemyTowerRange(nxtLoc)) {
+                int penalty = numAllyAdjacent[dir.getDirectionOrderNum()];
+                if (penalty < minPenalty) {
+                    minPenalty = penalty;
+                    bestDir = dir;
+                }
+            }
+        }
+        if (bestDir != null) {
+            rc.move(bestDir);
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean tryMoveLessSafeTile() throws GameActionException {
+        Direction[] dirs = adjacentDirections.clone();
+        shuffleArray(dirs);
+        Direction bestDir = null;
+        int minPenalty = 100;
+        for (int i = dirs.length; --i >= 0;) {
+            Direction dir = dirs[i];
+            MapLocation nxtLoc = rc.getLocation().add(dir);
+            if (!withinBounds(nxtLoc)) continue;
+            MapInfo tile = rc.senseMapInfo(nxtLoc);
+            if (!tile.getPaint().isEnemy() && rc.canMove(dir) && !inEnemyTowerRange(nxtLoc)) {
+                int penalty = numAllyAdjacent[dir.getDirectionOrderNum()];
+                if (penalty < minPenalty) {
+                    minPenalty = penalty;
+                    bestDir = dir;
+                }
+            }
+        }
+        if (bestDir != null) {
+            rc.move(bestDir);
+            return true;
+        }
+        return false;
+    }
 }
