@@ -124,7 +124,7 @@ public class Mopper extends Unit {
         Direction[] ord_dirs = {Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH};
 
         for(int i = 0; i < 8; i += 2) {
-            if(dir_counts[i] + dir_counts[i + 1] + dir_counts[(i + 2) % 8] >= 1) {
+            if(dir_counts[i] + dir_counts[i + 1] + dir_counts[(i + 2) % 8] >= 2) {
                 dir = ord_dirs[i / 2];
                 break;
             }
@@ -438,7 +438,7 @@ public class Mopper extends Unit {
 
             tryMoveLessSafeTile();
 
-            // trySweep();
+            trySweep();
 
             tryAttackEnemyRobot();
 

@@ -159,7 +159,7 @@ public abstract class Unit extends Robot {
     public static boolean tryMoveToFrontier() throws GameActionException {
         MapLocation attackLoc = informedEnemyPaintLoc;
 
-        if (rc.getLocation().isWithinDistanceSquared(attackLoc, visionRadiusSquared) 
+        if (attackLoc != null && rc.getLocation().isWithinDistanceSquared(attackLoc, visionRadiusSquared) 
         && rc.senseMapInfo(attackLoc).getPaint() == PaintType.EMPTY) {
             attackLoc = null;
         }
