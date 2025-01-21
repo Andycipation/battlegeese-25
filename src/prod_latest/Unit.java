@@ -147,7 +147,7 @@ public abstract class Unit extends Robot {
     void upgradeTowers() throws GameActionException {
         for (int i = nearbyAllyRobots.length; --i >= 0;)  {
             RobotInfo robotInfo = nearbyAllyRobots[i];
-            if (robotInfo.type.canUpgradeType()) {
+            if (robotInfo.type.canUpgradeType() && rc.getChips() > 10000) {
                 if (rc.canUpgradeTower(robotInfo.location)) {
                     rc.upgradeTower(robotInfo.location);
                 }

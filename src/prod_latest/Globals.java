@@ -141,7 +141,7 @@ public class Globals {
     }
 
     public static boolean withinPattern(MapLocation center, MapLocation loc) {
-        return Math.abs(center.x - loc.x) <= 2 && Math.abs(center.y - loc.y) <= 2;
+        return center.distanceSquaredTo(loc) <= GameConstants.RESOURCE_PATTERN_RADIUS_SQUARED;
     }
     
     /**
