@@ -620,7 +620,11 @@ public class Mopper extends Unit {
         }
 
         public void act() throws GameActionException {
-            tryMoveToFrontier();
+            if (!tryMoveToFrontier()) {
+                switchStrategy(new OptimalPathingStrategy());
+                return;
+            }
+            
 
             tryMoveToSafeTile();
 
@@ -644,5 +648,17 @@ public class Mopper extends Unit {
             return "CampFrontier ";
         }
 
+    }
+
+    static class OptimalPathingStrategy extends MopperStrategy {
+        public void act() throws GameActionException {
+            precomputeMovementInfo();
+
+        }
+
+        @Override
+        public String toString() {
+            return "Optimal Pathing";
+        }
     }
 }
