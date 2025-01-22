@@ -16,7 +16,6 @@ public class Soldier extends Unit {
     void play() throws GameActionException {
         if (strategy == null) {
             strategy = new EarlyGameStrategy();
-            return;
         }
         Logger.log(strategy.toString());
         strategy.act();
