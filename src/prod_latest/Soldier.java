@@ -208,7 +208,7 @@ public class Soldier extends Unit {
             MapLocation best = null;
             var myLoc = rc.getLocation();
             var myTile = rc.senseMapInfo(myLoc);
-            if (rc.canPaint(myLoc) && myTile.getPaint() != getPatternPaintColor(center, myLoc, type)) {
+            if (withinPattern(myLoc, center) && rc.canPaint(myLoc) && myTile.getPaint() != getPatternPaintColor(center, myLoc, type)) {
                 return myLoc;
             }
             for (int i = nearbyMapInfos.length; --i >= 0;) {
@@ -350,7 +350,7 @@ public class Soldier extends Unit {
             }
 
             if (!painted && rc.getRoundNum() >= 200) {
-                MapInfo[] attackableTiles = rc.senseNearbyMapInfos(locBeforeTurn, actionRadiusSquared);
+                MapInfo[] attackableTiles = rc.senseNearbyMapInfos(newLoc, actionRadiusSquared);
                 for (int i = attackableTiles.length; --i >= 0;) {
                     MapInfo tile = attackableTiles[i];
                     MapLocation loc = tile.getMapLocation();
