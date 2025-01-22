@@ -16,12 +16,6 @@ public class Comms {
         TOWER_NETWORK_RESPONSE,
         TOWER_NETWORK_INFORM,
     };
-    public static Comms towerToTowerCommsV1 = new Comms(new int[]{
-        Comms.IDENTIFIER_SZ, // protocol id
-        Tower.CommsStrategyV1.UNDETECTED_LEVEL + 1, // emptyness network level
-        Tower.CommsStrategyV1.UNDETECTED_LEVEL + 1, // enemyness network level
-        Comms.MAP_ENCODE_SZ // transmitter location
-    });
     public static Comms towerToTowerCommsV2 = new Comms(new int[]{
         Comms.IDENTIFIER_SZ, // protocol id
         Comms.BIT_SZ, // which network (1 for enemy network, 0 for empty network)
