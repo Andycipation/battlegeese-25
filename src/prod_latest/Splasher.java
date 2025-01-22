@@ -1,6 +1,7 @@
 package prod_latest;
 
 import battlecode.common.*;
+import prod_latest.Mopper.MopperStrategy;
 
 public class Splasher extends Unit {
 
@@ -12,19 +13,22 @@ public class Splasher extends Unit {
         strategy = newStrategy;
     }
 
-    public static void yieldStrategy(boolean acted) throws GameActionException{
-        strategy = new ExploreStrategy(15);
-        if (!acted) strategy.act();
+    public static void yieldStrategy() throws GameActionException{
+        strategy = new AggroStrategy();
     }
 
     @Override
     void play() throws GameActionException {
         if (strategy == null) {
-            yieldStrategy(false);
+            switchStrategy(new AggroStrategy());
         }
         strategy.act();
         Logger.log(strategy.toString());
-
+        if (rc.getPaint() < 50 && paintTowerLoc != null) {
+            Logger.log("refilling paint");
+            Logger.flush();
+            strategy = new RefillPaintStrategy(300);
+        }
         // also wanna upgrade towers nearby if possible
         upgradeTowers();
     }
@@ -39,6 +43,7 @@ public class Splasher extends Unit {
 
         @Override
         public void act() throws GameActionException {
+
 
             int[][] points = new int[5][5];
             int emptyWeight = 1, enemyWeight = 3;
@@ -145,78 +150,81 @@ public class Splasher extends Unit {
             if (bestAttackPoints >= 9 && rc.canAttack(bestAttackLoc)) {
                 rc.attack(bestAttackLoc);
             }
-            else if (bestAttackPoints == 0) {
-                // no suitable target; yield
-                yieldStrategy(false);
-                return;
-            }
-            else {
-                tryMoveToFrontier();
+            
+            tryMoveToFrontier();
 
-                tryMoveToSafeTile();
-    
-                tryMoveLessSafeTile();
-            }
+            tryMoveToSafeTile();
+
+            tryMoveLessSafeTile();
         }
 
         public String toString() {
             return "Aggro";
         }
     }
+    
+    static class RefillPaintStrategy extends SplasherStrategy {
+        private static int refillTo;
 
-    static class ExploreStrategy extends SplasherStrategy {
-    
-        public static int turnsLeft;
-        public static MapLocation target;
-        public static int turnsNotMoved;
-    
-        ExploreStrategy(int turns) {
-            turnsLeft = turns;
-            turnsNotMoved = 0;
-            if (informedEnemyPaintLoc != null && informedEnemyPaintLocTimestamp > roundNum - 30) {
-                target = informedEnemyPaintLoc;
-            }
-            else {
-                target = new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
-            }
+        public RefillPaintStrategy(int _refillTo) {
+            // assert(rc.getPaint() < refillTo);
+            refillTo = _refillTo;
         }
-    
+
         @Override
         public void act() throws GameActionException {
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                MapInfo tile = nearbyMapInfos[i];
-                if (tile.getPaint().isEnemy()) {
-                    switchStrategy(new AggroStrategy());
-                    return;
-                }
-            }
-
-            // BugNav.moveToward(target);
-
-            tryMoveToFrontier();
-
-            tryMoveToSafeTile();
-
-            tryMoveLessSafeTile();
-
-            if (rc.getLocation() == locBeforeTurn) {
-                turnsNotMoved++;
-                if (turnsNotMoved >= 3) {
-                    yieldStrategy(true);
-                    return;
-                }
-            }
-            else turnsNotMoved = 0;
-            turnsLeft--;
-            if (turnsLeft <= 0) { // if turn counter is up, also yield
-                yieldStrategy(true);
+            if (rc.getPaint() >= refillTo) {
+                yieldStrategy();
                 return;
             }
+            if (paintTowerLoc == null) {
+                yieldStrategy();
+                return;
+            }
+            final var dir = BugNav.getDirectionToMove(paintTowerLoc);
+            if (dir == null) {
+                // We have no valid moves!
+                return;
+            }
+
+            if (!rc.canSenseRobotAtLocation(paintTowerLoc)) {
+                // We're still very far, just move closer
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                return;
+            }
+
+            final var paintTowerInfo = rc.senseRobotAtLocation(paintTowerLoc);
+            if (!Globals.isAllyPaintTower(paintTowerInfo)) {
+                System.out.println("Our paint tower got destroyed and changed to something else!");
+                paintTowerLoc = null;
+                yieldStrategy();
+                return;
+            }
+
+            // If we wouldn't start incurring penalty from the tower, move closer
+            final var nextLoc = rc.getLocation().add(dir);
+            if (nextLoc.distanceSquaredTo(paintTowerLoc) > GameConstants.PAINT_TRANSFER_RADIUS_SQUARED) {
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                return;
+            }
+
+            final var spaceToFill = refillTo - rc.getPaint();
+            if (paintTowerInfo.getPaintAmount() >= spaceToFill) {
+                rc.move(dir);
+                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                if (rc.canTransferPaint(paintTowerLoc, -spaceToFill)) {
+                    rc.transferPaint(paintTowerLoc, -spaceToFill);
+                    yieldStrategy();
+                }
+            }
         }
-    
+
+        @Override
         public String toString() {
-            return "Explore " + turnsLeft + " " + target;
+            return "RefillPaintStrategy " + paintTowerLoc;
         }
+
     }
-    
 }

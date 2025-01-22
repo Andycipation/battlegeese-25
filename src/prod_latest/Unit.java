@@ -10,6 +10,8 @@ public abstract class Unit extends Robot {
     static public int informedEnemyPaintLocTimestamp = -1;
     static public MapLocation informedEmptyPaintLoc = null;
     static public int informedEmptyPaintLocTimestamp = -1;
+    static public MapLocation spawnLocation;
+    static public Boolean reachedReflected = false;
 
     public static enum MapLocationType {
         PASSABLE, WALL, RUIN
@@ -19,6 +21,11 @@ public abstract class Unit extends Robot {
     // public Unit() {
     //     memory = new MapLocationType[mapWidth][mapHeight];
     // }
+
+    Unit() {
+        super();
+        spawnLocation = rc.getLocation();
+    }
     
     public static boolean chkEmptyLoc(MapLocation loc, int timestamp) {
         if (timestamp > informedEmptyPaintLocTimestamp) {
@@ -147,8 +154,12 @@ public abstract class Unit extends Robot {
     void upgradeTowers() throws GameActionException {
         for (int i = nearbyAllyRobots.length; --i >= 0;)  {
             RobotInfo robotInfo = nearbyAllyRobots[i];
-            if (robotInfo.type.canUpgradeType() && rc.getChips() > 10000) {
-                if (rc.canUpgradeTower(robotInfo.location)) {
+
+            if (robotInfo.getType().canUpgradeType() && rc.canUpgradeTower(robotInfo.location)) {
+                if (robotInfo.getType().level == 1 && rc.getChips() > 3500) {
+                    rc.upgradeTower(robotInfo.location);
+                }
+                if (robotInfo.getType().level == 2 && rc.getChips() > 7000) {
                     rc.upgradeTower(robotInfo.location);
                 }
             }
@@ -158,6 +169,12 @@ public abstract class Unit extends Robot {
 
     public static boolean tryMoveToFrontier() throws GameActionException {
         MapLocation attackLoc = informedEnemyPaintLoc;
+        // if (rc.getLocation().isWithinDistanceSquared(invertLoc(spawnLocation), 20)) {
+        //     reachedReflected = true;
+        // }
+        // if (!reachedReflected) {
+        //     attackLoc = invertLoc(spawnLocation);
+        // }
 
         if (attackLoc != null && rc.getLocation().isWithinDistanceSquared(attackLoc, visionRadiusSquared) 
         && rc.senseMapInfo(attackLoc).getPaint() == PaintType.EMPTY) {

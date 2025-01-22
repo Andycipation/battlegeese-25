@@ -133,7 +133,7 @@ public class Mopper extends Unit {
         if(dir != null) {
             if(rc.canMopSwing(dir)) {
                 rc.mopSwing(dir);
-                rc.setTimelineMarker("SWEEP", 0, 255, 0);
+                // rc.setTimelineMarker("SWEEP", 0, 255, 0);
                 return true;
             }
         }

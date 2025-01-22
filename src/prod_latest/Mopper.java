@@ -70,7 +70,7 @@ public class Mopper extends Unit {
     public static boolean tryTransferPaintSoldier(int amount) throws GameActionException {
         for (int i = nearbyAllyRobots.length; --i >= 0;) {
             RobotInfo ally = nearbyAllyRobots[i];
-            if (ally.getType() != UnitType.SOLDIER) continue;
+            if (ally.getType().isRobotType() && ally.getType() != UnitType.MOPPER) continue;
             if (rc.canTransferPaint(ally.getLocation(), amount) && ally.getPaintAmount() + amount <= ally.getType().paintCapacity) {
                 rc.transferPaint(ally.getLocation(), amount);
                 return true;
@@ -79,12 +79,6 @@ public class Mopper extends Unit {
         return false;
     }
 
-
-
-
-
-
-
     @Override
     void play() throws GameActionException {
         if (strategy == null) {
@@ -92,11 +86,11 @@ public class Mopper extends Unit {
         }
         strategy.act();
         Logger.log(strategy.toString());
-        // if (rc.getPaint() < 30 && paintTowerLoc != null) {
-        //     Logger.log("refilling paint");
-        //     Logger.flush();
-        //     strategy = new RefillPaintStrategy(60);
-        // }
+        if (rc.getPaint() < 5 && paintTowerLoc != null) {
+            Logger.log("refilling paint");
+            Logger.flush();
+            strategy = new RefillPaintStrategy(100);
+        }
         // also wanna upgrade towers nearby if possible
         upgradeTowers();
     }
@@ -133,7 +127,7 @@ public class Mopper extends Unit {
         if(dir != null) {
             if(rc.canMopSwing(dir)) {
                 rc.mopSwing(dir);
-                rc.setTimelineMarker("SWEEP", 0, 255, 0);
+                // rc.setTimelineMarker("SWEEP", 0, 255, 0);
                 return true;
             }
         }
@@ -141,7 +135,7 @@ public class Mopper extends Unit {
         return false;
     }
 
-    abstract static class MopperStrategy extends Mopper {
+    abstract static class MopperStrategy {
         abstract public void act() throws GameActionException;
     }
     
