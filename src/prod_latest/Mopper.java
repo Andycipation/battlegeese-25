@@ -269,15 +269,14 @@ public class Mopper extends Unit {
         return (numAllyTilesAdjacent >> (attackDir.getDirectionOrderNum() * 3)) & 0b111;
     }
 
+    // return true if just moved
     public static boolean tryMoveAttackEnemyTileWithRobot() throws GameActionException {
-        if (!rc.isActionReady()) return false;
-
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
-            if (rc.canMove(dir)) {
+            if (rc.canMove(dir) && dirInEnemyTowerRange(dir)) {
                 rc.move(dir);
                 for (int j = nearbyEnemyRobots.length; --j >= 0;) {
-                    RobotInfo enemy = nearbyEnemyRobots[i];
+                    RobotInfo enemy = nearbyEnemyRobots[j];
                     if (enemy.getType().isRobotType() && rc.canAttack(enemy.getLocation())) {
                         rc.attack(enemy.getLocation());
                     }
@@ -288,17 +287,38 @@ public class Mopper extends Unit {
         return false;
     }
 
-    public static boolean tryMopCrowd() throws GameActionException {
-        if (!rc.isActionReady()) return false;
-
+    // return true if just moved
+    public static boolean tryMoveSweepCrowd() throws GameActionException {
         Direction bestMoveDir = null;
-        Direction bestSwingDir = null;
+        Direction bestSweepDir = null;
+        int bestSweep = 0;
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
-            Direction dir = Direction.DIRECTION_ORDER[i];
-            if (rc.canMove(dir)) {
-
+            Direction moveDir = Direction.DIRECTION_ORDER[i];
+            if (rc.canMove(moveDir)) {
+                for (int j = 4; --j >= 0;) {
+                    Direction swingDir = cardinalDirections[j];
+                    int cnt = enemiesSwept(moveDir, swingDir);
+                    if (cnt > bestSweep) {
+                        bestMoveDir = moveDir;
+                        bestSweepDir = swingDir;
+                        bestSweep = cnt;
+                    }
+                } 
             }
         }
+        if (bestMoveDir != null) {
+            rc.move(bestMoveDir);
+            if (rc.canMopSwing(bestSweepDir)) {
+                rc.mopSwing(bestSweepDir);
+            }
+            return true;
+        } 
+        return false;
+    }
+
+    public static boolean tryMoveAttackEnemyRobotWithoutTile() {
+        if (!rc.isActionReady()) return false;
+
         return false;
     }
 
@@ -688,9 +708,10 @@ public class Mopper extends Unit {
             // 1. attacking enemy on enemy tile 
             tryMoveAttackEnemyTileWithRobot();
 
-            // 2. 
+            // 2. sweep more than 2 ppl
+            tryMoveSweepCrowd();
 
-
+            // 3. attack enemy not on tile
         }
 
         @Override

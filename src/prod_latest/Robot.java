@@ -43,7 +43,7 @@ public abstract class Robot extends Globals {
     }
 
     // is my current location plus dir in an enemy tower range?
-    public boolean dirInEnemyTowerRange(Direction dir) {
+    public static boolean dirInEnemyTowerRange(Direction dir) {
         return (1 & (inEnemyTowerRangeMask >> dir.getDirectionOrderNum())) == 1;
     }
 
