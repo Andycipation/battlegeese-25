@@ -1,7 +1,6 @@
 package prod_latest;
 
 import battlecode.common.*;
-import prod_latest.Soldier.EarlyGameStrategy.StrategyState;
 
 public class Soldier extends Unit {
     /**
@@ -17,7 +16,6 @@ public class Soldier extends Unit {
     void play() throws GameActionException {
         if (strategy == null) {
             strategy = new EarlyGameStrategy();
-            return;
         }
         Logger.log(strategy.toString());
         strategy.act();
@@ -231,8 +229,12 @@ public class Soldier extends Unit {
 
         @Override
         public void act() throws GameActionException {
-            if (target != null)
+            if (state == StrategyState.BUILDING_RUIN) {
+                if (!rc.isActionReady()) {
+                    return;
+                }
                 tryRefill(target);
+            }
 
             // int startBytecodes = Clock.getBytecodeNum();
             getProject();
