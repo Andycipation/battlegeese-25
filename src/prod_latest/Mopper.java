@@ -8,6 +8,7 @@ public class Mopper extends Unit {
     public static int[] sweepScore = new int[9];
     public static int adjEnemyTile;
     public static int adjEnemyTileWithRobot;
+    public static int adjWithEnemyRobot;
     public static int[] adjacentAllyTiles;
     public static int numAllyTilesAdjacent;
 
@@ -86,6 +87,11 @@ public class Mopper extends Unit {
 
     public static void precomputeMovementInfo() throws GameActionException {
         sweepScore = new int[9];
+        adjWithEnemyRobot = 0;
+        adjEnemyTile = 0;
+        adjEnemyTileWithRobot = 0;
+        numAllyTilesAdjacent = 0;
+
         for (int i = nearbyEnemyRobots.length; --i >= 0;) {
             RobotInfo robot = nearbyEnemyRobots[i];
             if (robot.getType().isTowerType()) continue;
@@ -138,11 +144,35 @@ public class Mopper extends Unit {
                 case 64: sweepScore[4] |= 16; sweepScore[5] |= 16; break; // (3, 1)
                 case 65: sweepScore[4] |= 16; break; // (3, 2)
             }
+            switch ((diff.x + 4) * 9 + (diff.y + 4)) {
+                case 20: adjWithEnemyRobot |= 256; break; // (-2, -2)
+                case 21: adjWithEnemyRobot |= 258; break; // (-2, -1)
+                case 22: adjWithEnemyRobot |= 262; break; // (-2, 0)
+                case 23: adjWithEnemyRobot |= 6; break; // (-2, 1)
+                case 24: adjWithEnemyRobot |= 4; break; // (-2, 2)
+                case 29: adjWithEnemyRobot |= 384; break; // (-1, -2)
+                case 30: adjWithEnemyRobot |= 387; break; // (-1, -1)
+                case 31: adjWithEnemyRobot |= 399; break; // (-1, 0)
+                case 32: adjWithEnemyRobot |= 15; break; // (-1, 1)
+                case 33: adjWithEnemyRobot |= 12; break; // (-1, 2)
+                case 38: adjWithEnemyRobot |= 448; break; // (0, -2)
+                case 39: adjWithEnemyRobot |= 483; break; // (0, -1)
+                case 40: adjWithEnemyRobot |= 511; break; // (0, 0)
+                case 41: adjWithEnemyRobot |= 63; break; // (0, 1)
+                case 42: adjWithEnemyRobot |= 28; break; // (0, 2)
+                case 47: adjWithEnemyRobot |= 192; break; // (1, -2)
+                case 48: adjWithEnemyRobot |= 225; break; // (1, -1)
+                case 49: adjWithEnemyRobot |= 249; break; // (1, 0)
+                case 50: adjWithEnemyRobot |= 57; break; // (1, 1)
+                case 51: adjWithEnemyRobot |= 24; break; // (1, 2)
+                case 56: adjWithEnemyRobot |= 64; break; // (2, -2)
+                case 57: adjWithEnemyRobot |= 96; break; // (2, -1)
+                case 58: adjWithEnemyRobot |= 112; break; // (2, 0)
+                case 59: adjWithEnemyRobot |= 48; break; // (2, 1)
+                case 60: adjWithEnemyRobot |= 16; break; // (2, 2)
+            }
         }
         
-        adjEnemyTile = 0;
-        adjEnemyTileWithRobot = 0;
-        numAllyTilesAdjacent = 0;
         for (int i = nearbyMapInfos.length; --i >= 0;) {
             MapInfo tile = nearbyMapInfos[i];
             MapLocation loc = tile.getMapLocation();
@@ -170,6 +200,7 @@ public class Mopper extends Unit {
                     case 57: numAllyTilesAdjacent |= 262144; break; // (2, -1)
                     case 58: numAllyTilesAdjacent |= 32768; break; // (2, 0)
                     case 59: numAllyTilesAdjacent |= 4096; break; // (2, 1)
+                    case 60: numAllyTilesAdjacent |= 16; break; // (2, 2)
                 }
             }
             else if (tile.getPaint().isEnemy()){
@@ -269,6 +300,9 @@ public class Mopper extends Unit {
         return (numAllyTilesAdjacent >> (attackDir.getDirectionOrderNum() * 3)) & 0b111;
     }
 
+    public static boolean getAdjWithEnemyRobot(Direction moveDir) {
+        return (1 & (adjWithEnemyRobot >> (moveDir.getDirectionOrderNum()))) == 1;
+    }
 
     @Override
     void play() throws GameActionException {
