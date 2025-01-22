@@ -171,6 +171,10 @@ public class Globals {
         return type == UnitType.LEVEL_ONE_PAINT_TOWER || type == UnitType.LEVEL_TWO_PAINT_TOWER || type == UnitType.LEVEL_THREE_PAINT_TOWER;
     }
 
+    public static boolean isDefenseTower(UnitType type) {
+        return type == UnitType.LEVEL_ONE_DEFENSE_TOWER || type == UnitType.LEVEL_TWO_DEFENSE_TOWER || type == UnitType.LEVEL_THREE_DEFENSE_TOWER;
+    }
+
     public static boolean isAllyPaintTower(RobotInfo info) {
         return isPaintTower(info.type) && info.team.equals(myTeam);
     }
