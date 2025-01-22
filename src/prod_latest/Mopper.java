@@ -5,6 +5,11 @@ import battlecode.common.*;
 public class Mopper extends Unit {
 
     public static MopperStrategy strategy;
+    public static int[] sweepScore = new int[9];
+    public static int adjEnemyTile;
+    public static int adjEnemyTileWithRobot;
+    public static int[] adjacentAllyTiles;
+    public static int numAllyTilesAdjacent;
 
     public static void switchStrategy(MopperStrategy newStrategy) {
         strategy = newStrategy;
@@ -79,10 +84,193 @@ public class Mopper extends Unit {
         return false;
     }
 
+    public static void precomputeMovementInfo() throws GameActionException {
+        sweepScore = new int[9];
+        for (int i = nearbyEnemyRobots.length; --i >= 0;) {
+            RobotInfo robot = nearbyEnemyRobots[i];
+            if (robot.getType().isTowerType()) continue;
+            MapLocation loc = robot.getLocation();
+            MapLocation diff = loc.translate(locBeforeTurn.x, locBeforeTurn.y);
+            switch ((diff.x + 4) * 9 + (diff.y)) {
+                case 7: sweepScore[8] |= 4096; break; // (-3, -2)
+                case 8: sweepScore[1] |= 4096; sweepScore[8] |= 4096; break; // (-3, -1)
+                case 9: sweepScore[1] |= 4096; sweepScore[2] |= 4096; sweepScore[8] |= 4096; break; // (-3, 0)
+                case 10: sweepScore[1] |= 4096; sweepScore[2] |= 4096; break; // (-3, 1)
+                case 11: sweepScore[2] |= 4096; break; // (-3, 2)
+                case 15: sweepScore[8] |= 256; break; // (-2, -3)
+                case 16: sweepScore[1] |= 256; sweepScore[7] |= 4096; sweepScore[8] |= 4352; break; // (-2, -2)
+                case 17: sweepScore[0] |= 4096; sweepScore[1] |= 4352; sweepScore[2] |= 256; sweepScore[7] |= 4096; sweepScore[8] |= 4096; break; // (-2, -1)
+                case 18: sweepScore[0] |= 4096; sweepScore[1] |= 4096; sweepScore[2] |= 4352; sweepScore[3] |= 4096; sweepScore[7] |= 4096; sweepScore[8] |= 4097; break; // (-2, 0)
+                case 19: sweepScore[0] |= 4096; sweepScore[1] |= 4097; sweepScore[2] |= 4096; sweepScore[3] |= 4096; sweepScore[8] |= 1; break; // (-2, 1)
+                case 20: sweepScore[1] |= 1; sweepScore[2] |= 4097; sweepScore[3] |= 4096; break; // (-2, 2)
+                case 21: sweepScore[2] |= 1; break; // (-2, 3)
+                case 24: sweepScore[7] |= 256; sweepScore[8] |= 256; break; // (-1, -3)
+                case 25: sweepScore[0] |= 256; sweepScore[1] |= 256; sweepScore[6] |= 4096; sweepScore[7] |= 4352; sweepScore[8] |= 256; break; // (-1, -2)
+                case 26: sweepScore[0] |= 4352; sweepScore[1] |= 256; sweepScore[2] |= 256; sweepScore[3] |= 256; sweepScore[5] |= 4096; sweepScore[6] |= 4096; sweepScore[7] |= 4096; break; // (-1, -1)
+                case 27: sweepScore[0] |= 4096; sweepScore[2] |= 256; sweepScore[3] |= 4352; sweepScore[4] |= 4096; sweepScore[5] |= 4096; sweepScore[6] |= 4096; sweepScore[7] |= 4097; sweepScore[8] |= 1; break; // (-1, 0)
+                case 28: sweepScore[0] |= 4097; sweepScore[1] |= 1; sweepScore[3] |= 4096; sweepScore[4] |= 4096; sweepScore[5] |= 4096; sweepScore[7] |= 1; sweepScore[8] |= 1; break; // (-1, 1)
+                case 29: sweepScore[0] |= 1; sweepScore[1] |= 1; sweepScore[2] |= 1; sweepScore[3] |= 4097; sweepScore[4] |= 4096; break; // (-1, 2)
+                case 30: sweepScore[2] |= 1; sweepScore[3] |= 1; break; // (-1, 3)
+                case 33: sweepScore[6] |= 256; sweepScore[7] |= 256; sweepScore[8] |= 256; break; // (0, -3)
+                case 34: sweepScore[0] |= 256; sweepScore[1] |= 256; sweepScore[5] |= 256; sweepScore[6] |= 4352; sweepScore[7] |= 256; sweepScore[8] |= 272; break; // (0, -2)
+                case 35: sweepScore[0] |= 256; sweepScore[1] |= 272; sweepScore[2] |= 256; sweepScore[3] |= 256; sweepScore[4] |= 256; sweepScore[5] |= 4352; sweepScore[6] |= 4096; sweepScore[8] |= 16; break; // (0, -1)
+                case 36: sweepScore[1] |= 16; sweepScore[2] |= 272; sweepScore[3] |= 256; sweepScore[4] |= 4352; sweepScore[5] |= 4096; sweepScore[6] |= 4097; sweepScore[7] |= 1; sweepScore[8] |= 17; break; // (0, 0)
+                case 37: sweepScore[0] |= 1; sweepScore[1] |= 17; sweepScore[2] |= 16; sweepScore[4] |= 4096; sweepScore[5] |= 4097; sweepScore[6] |= 1; sweepScore[7] |= 1; sweepScore[8] |= 1; break; // (0, 1)
+                case 38: sweepScore[0] |= 1; sweepScore[1] |= 1; sweepScore[2] |= 17; sweepScore[3] |= 1; sweepScore[4] |= 4097; sweepScore[5] |= 1; break; // (0, 2)
+                case 39: sweepScore[2] |= 1; sweepScore[3] |= 1; sweepScore[4] |= 1; break; // (0, 3)
+                case 42: sweepScore[6] |= 256; sweepScore[7] |= 256; break; // (1, -3)
+                case 43: sweepScore[0] |= 256; sweepScore[5] |= 256; sweepScore[6] |= 256; sweepScore[7] |= 272; sweepScore[8] |= 16; break; // (1, -2)
+                case 44: sweepScore[0] |= 272; sweepScore[1] |= 16; sweepScore[3] |= 256; sweepScore[4] |= 256; sweepScore[5] |= 256; sweepScore[7] |= 16; sweepScore[8] |= 16; break; // (1, -1)
+                case 45: sweepScore[0] |= 16; sweepScore[1] |= 16; sweepScore[2] |= 16; sweepScore[3] |= 272; sweepScore[4] |= 256; sweepScore[6] |= 1; sweepScore[7] |= 17; sweepScore[8] |= 16; break; // (1, 0)
+                case 46: sweepScore[0] |= 17; sweepScore[1] |= 16; sweepScore[2] |= 16; sweepScore[3] |= 16; sweepScore[5] |= 1; sweepScore[6] |= 1; sweepScore[7] |= 1; break; // (1, 1)
+                case 47: sweepScore[0] |= 1; sweepScore[2] |= 16; sweepScore[3] |= 17; sweepScore[4] |= 1; sweepScore[5] |= 1; break; // (1, 2)
+                case 48: sweepScore[3] |= 1; sweepScore[4] |= 1; break; // (1, 3)
+                case 51: sweepScore[6] |= 256; break; // (2, -3)
+                case 52: sweepScore[5] |= 256; sweepScore[6] |= 272; sweepScore[7] |= 16; break; // (2, -2)
+                case 53: sweepScore[0] |= 16; sweepScore[4] |= 256; sweepScore[5] |= 272; sweepScore[6] |= 16; sweepScore[7] |= 16; break; // (2, -1)
+                case 54: sweepScore[0] |= 16; sweepScore[3] |= 16; sweepScore[4] |= 272; sweepScore[5] |= 16; sweepScore[6] |= 17; sweepScore[7] |= 16; break; // (2, 0)
+                case 55: sweepScore[0] |= 16; sweepScore[3] |= 16; sweepScore[4] |= 16; sweepScore[5] |= 17; sweepScore[6] |= 1; break; // (2, 1)
+                case 56: sweepScore[3] |= 16; sweepScore[4] |= 17; sweepScore[5] |= 1; break; // (2, 2)
+                case 57: sweepScore[4] |= 1; break; // (2, 3)
+                case 61: sweepScore[6] |= 16; break; // (3, -2)
+                case 62: sweepScore[5] |= 16; sweepScore[6] |= 16; break; // (3, -1)
+                case 63: sweepScore[4] |= 16; sweepScore[5] |= 16; sweepScore[6] |= 16; break; // (3, 0)
+                case 64: sweepScore[4] |= 16; sweepScore[5] |= 16; break; // (3, 1)
+                case 65: sweepScore[4] |= 16; break; // (3, 2)
+            }
+        }
+        
+        adjEnemyTile = 0;
+        adjEnemyTileWithRobot = 0;
+        numAllyTilesAdjacent = 0;
+        for (int i = nearbyMapInfos.length; --i >= 0;) {
+            MapInfo tile = nearbyMapInfos[i];
+            MapLocation loc = tile.getMapLocation();
+            MapLocation diff = loc.translate(locBeforeTurn.x, locBeforeTurn.y);
+            if (tile.getPaint().isAlly()) {
+                switch ((diff.x + 4) * 9 + (diff.y)) {
+                    case 16: numAllyTilesAdjacent |= 256; break; // (-2, -2)
+                    case 17: numAllyTilesAdjacent |= 258; break; // (-2, -1)
+                    case 18: numAllyTilesAdjacent |= 262; break; // (-2, 0)
+                    case 19: numAllyTilesAdjacent |= 6; break; // (-2, 1)
+                    case 20: numAllyTilesAdjacent |= 4; break; // (-2, 2)
+                    case 25: numAllyTilesAdjacent |= 384; break; // (-1, -2)
+                    case 26: numAllyTilesAdjacent |= 387; break; // (-1, -1)
+                    case 27: numAllyTilesAdjacent |= 399; break; // (-1, 0)
+                    case 28: numAllyTilesAdjacent |= 15; break; // (-1, 1)
+                    case 29: numAllyTilesAdjacent |= 12; break; // (-1, 2)
+                    case 34: numAllyTilesAdjacent |= 448; break; // (0, -2)
+                    case 35: numAllyTilesAdjacent |= 483; break; // (0, -1)
+                    case 36: numAllyTilesAdjacent |= 511; break; // (0, 0)
+                    case 37: numAllyTilesAdjacent |= 63; break; // (0, 1)
+                    case 38: numAllyTilesAdjacent |= 28; break; // (0, 2)
+                    case 43: numAllyTilesAdjacent |= 192; break; // (1, -2)
+                    case 44: numAllyTilesAdjacent |= 225; break; // (1, -1)
+                    case 45: numAllyTilesAdjacent |= 249; break; // (1, 0)
+                    case 46: numAllyTilesAdjacent |= 57; break; // (1, 1)
+                    case 47: numAllyTilesAdjacent |= 24; break; // (1, 2)
+                    case 52: numAllyTilesAdjacent |= 64; break; // (2, -2)
+                    case 53: numAllyTilesAdjacent |= 96; break; // (2, -1)
+                    case 54: numAllyTilesAdjacent |= 112; break; // (2, 0)
+                    case 55: numAllyTilesAdjacent |= 48; break; // (2, 1)
+                    case 56: numAllyTilesAdjacent |= 16; break; // (2, 2)
+                }
+            }
+            else if (tile.getPaint().isEnemy()){
+                switch ((diff.x + 4) * 9 + (diff.y)) {
+                    case 16: adjEnemyTile |= 256; break; // (-2, -2)
+                    case 17: adjEnemyTile |= 258; break; // (-2, -1)
+                    case 18: adjEnemyTile |= 262; break; // (-2, 0)
+                    case 19: adjEnemyTile |= 6; break; // (-2, 1)
+                    case 20: adjEnemyTile |= 4; break; // (-2, 2)
+                    case 25: adjEnemyTile |= 384; break; // (-1, -2)
+                    case 26: adjEnemyTile |= 387; break; // (-1, -1)
+                    case 27: adjEnemyTile |= 399; break; // (-1, 0)
+                    case 28: adjEnemyTile |= 15; break; // (-1, 1)
+                    case 29: adjEnemyTile |= 12; break; // (-1, 2)
+                    case 34: adjEnemyTile |= 448; break; // (0, -2)
+                    case 35: adjEnemyTile |= 483; break; // (0, -1)
+                    case 36: adjEnemyTile |= 511; break; // (0, 0)
+                    case 37: adjEnemyTile |= 63; break; // (0, 1)
+                    case 38: adjEnemyTile |= 28; break; // (0, 2)
+                    case 43: adjEnemyTile |= 192; break; // (1, -2)
+                    case 44: adjEnemyTile |= 225; break; // (1, -1)
+                    case 45: adjEnemyTile |= 249; break; // (1, 0)
+                    case 46: adjEnemyTile |= 57; break; // (1, 1)
+                    case 47: adjEnemyTile |= 24; break; // (1, 2)
+                    case 52: adjEnemyTile |= 64; break; // (2, -2)
+                    case 53: adjEnemyTile |= 96; break; // (2, -1)
+                    case 54: adjEnemyTile |= 112; break; // (2, 0)
+                    case 55: adjEnemyTile |= 48; break; // (2, 1)
+                    case 56: adjEnemyTile |= 16; break; // (2, 2)
+                }
+                RobotInfo robotInfo = rc.senseRobotAtLocation(loc);
+                if (robotInfo != null && robotInfo.getTeam() == opponentTeam) {
+                    switch ((diff.x + 4) * 9 + (diff.y)) {
+                        case 16: adjEnemyTileWithRobot |= 256; break; // (-2, -2)
+                        case 17: adjEnemyTileWithRobot |= 258; break; // (-2, -1)
+                        case 18: adjEnemyTileWithRobot |= 262; break; // (-2, 0)
+                        case 19: adjEnemyTileWithRobot |= 6; break; // (-2, 1)
+                        case 20: adjEnemyTileWithRobot |= 4; break; // (-2, 2)
+                        case 25: adjEnemyTileWithRobot |= 384; break; // (-1, -2)
+                        case 26: adjEnemyTileWithRobot |= 387; break; // (-1, -1)
+                        case 27: adjEnemyTileWithRobot |= 399; break; // (-1, 0)
+                        case 28: adjEnemyTileWithRobot |= 15; break; // (-1, 1)
+                        case 29: adjEnemyTileWithRobot |= 12; break; // (-1, 2)
+                        case 34: adjEnemyTileWithRobot |= 448; break; // (0, -2)
+                        case 35: adjEnemyTileWithRobot |= 483; break; // (0, -1)
+                        case 36: adjEnemyTileWithRobot |= 511; break; // (0, 0)
+                        case 37: adjEnemyTileWithRobot |= 63; break; // (0, 1)
+                        case 38: adjEnemyTileWithRobot |= 28; break; // (0, 2)
+                        case 43: adjEnemyTileWithRobot |= 192; break; // (1, -2)
+                        case 44: adjEnemyTileWithRobot |= 225; break; // (1, -1)
+                        case 45: adjEnemyTileWithRobot |= 249; break; // (1, 0)
+                        case 46: adjEnemyTileWithRobot |= 57; break; // (1, 1)
+                        case 47: adjEnemyTileWithRobot |= 24; break; // (1, 2)
+                        case 52: adjEnemyTileWithRobot |= 64; break; // (2, -2)
+                        case 53: adjEnemyTileWithRobot |= 96; break; // (2, -1)
+                        case 54: adjEnemyTileWithRobot |= 112; break; // (2, 0)
+                        case 55: adjEnemyTileWithRobot |= 48; break; // (2, 1)
+                        case 56: adjEnemyTileWithRobot |= 16; break; // (2, 2)
+                    }
+                }
+            }
+        }
+    }
 
+    public static int enemiesSwept(Direction moveDir, Direction swing) {
+        int idx;
+        switch (swing) {
+            case NORTH:
+                idx = 0;
+                break;
+            case EAST:
+                idx = 4;
+                break;
+            case SOUTH:
+                idx = 8;
+                break;
+            case WEST:
+                idx = 16;
+                break;
+            default:
+                idx = -1;
+                break;
+        }
+        return (sweepScore[moveDir.getDirectionOrderNum()] >> idx) & 15;
+    }
 
+    public static boolean hasEnemyTileWithRobot(Direction moveDir) {
+        return (1 & (adjEnemyTileWithRobot >> (moveDir.getDirectionOrderNum()))) == 1;
+    }
 
+    public static boolean hasEnemyTile(Direction moveDir) {
+        return (1 & (adjEnemyTile >> (moveDir.getDirectionOrderNum()))) == 1;
+    }
 
+    public static int countNumAllyTilesAdjacent(Direction moveDir) {
+        return (numAllyTilesAdjacent >> (moveDir.getDirectionOrderNum() * 4)) & 0b1111;
+    }
 
 
     @Override
