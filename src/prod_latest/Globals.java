@@ -279,6 +279,11 @@ public class Globals {
         return (getSrpUseSecondary(loc) ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY);
     }
 
+    public static PaintType getPatternPaintColor(MapLocation center, MapLocation loc, UnitType type) {
+        if (type == null) return getSrpPaintColor(loc);
+        return getTowerPaintColor(center, loc, type);
+    }
+
     public static boolean isInSrpCenterLocation(MapLocation loc) {
         return loc.x % 4 == 2 && loc.y % 4 == 2;
     }
