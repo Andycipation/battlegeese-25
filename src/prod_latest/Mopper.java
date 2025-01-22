@@ -268,8 +268,8 @@ public class Mopper extends Unit {
         return (1 & (adjEnemyTile >> (moveDir.getDirectionOrderNum()))) == 1;
     }
 
-    public static int countNumAllyTilesAdjacent(Direction moveDir) {
-        return (numAllyTilesAdjacent >> (moveDir.getDirectionOrderNum() * 4)) & 0b1111;
+    public static int countNumAllyTilesAdjacent(Direction attackDir) {
+        return (numAllyTilesAdjacent >> (attackDir.getDirectionOrderNum() * 4)) & 0b1111;
     }
 
 
