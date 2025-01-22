@@ -272,6 +272,40 @@ public class Mopper extends Unit {
         return (numAllyTilesAdjacent >> (attackDir.getDirectionOrderNum() * 4)) & 0b1111;
     }
 
+    public static boolean tryMoveAttackEnemyTileWithRobot() throws GameActionException {
+        if (!rc.isActionReady()) return false;
+
+        for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+            Direction dir = Direction.DIRECTION_ORDER[i];
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+                for (int j = nearbyEnemyRobots.length; --j >= 0;) {
+                    RobotInfo enemy = nearbyEnemyRobots[i];
+                    if (enemy.getType().isRobotType() && rc.canAttack(enemy.getLocation())) {
+                        rc.attack(enemy.getLocation());
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean tryMopCrowd() throws GameActionException {
+        if (!rc.isActionReady()) return false;
+
+        Direction bestMoveDir = null;
+        Direction bestSwingDir = null;
+        for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+            Direction dir = Direction.DIRECTION_ORDER[i];
+            if (rc.canMove(dir)) {
+
+            }
+        }
+        return false;
+    }
+
+
 
     @Override
     void play() throws GameActionException {
@@ -653,6 +687,12 @@ public class Mopper extends Unit {
     static class OptimalPathingStrategy extends MopperStrategy {
         public void act() throws GameActionException {
             precomputeMovementInfo();
+
+            // 1. attacking enemy on enemy tile 
+            tryMoveAttackEnemyTileWithRobot();
+
+            // 2. 
+
 
         }
 
