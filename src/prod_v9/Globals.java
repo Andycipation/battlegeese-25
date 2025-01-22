@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v9;
 
 import java.util.Random;
 
@@ -169,10 +169,6 @@ public class Globals {
      */
     public static boolean isPaintTower(UnitType type) {
         return type == UnitType.LEVEL_ONE_PAINT_TOWER || type == UnitType.LEVEL_TWO_PAINT_TOWER || type == UnitType.LEVEL_THREE_PAINT_TOWER;
-    }
-
-    public static boolean isDefenseTower(UnitType type) {
-        return type == UnitType.LEVEL_ONE_DEFENSE_TOWER || type == UnitType.LEVEL_TWO_DEFENSE_TOWER || type == UnitType.LEVEL_THREE_DEFENSE_TOWER;
     }
 
     public static boolean isAllyPaintTower(RobotInfo info) {
