@@ -21,26 +21,27 @@ public class Mopper extends Unit {
     }
 
 
-    public static Direction canAttackEnemeyRobotFromDir(Direction dir) {
-        MapLocation attackLoc = rc.getLocation().add(dir);
-        for (int i = nearbyEnemyRobots.length; --i >= 0;) {
-            RobotInfo robot = nearbyEnemyRobots[i];
-            MapLocation loc = robot.getLocation();
-            if (rc.canAttack(loc) && robot.getPaintAmount() > 0 && robot.getType().isRobotType()) {
-                if (attackLoc == null) {
-                    attackLoc = loc;
-                } 
-                if (rc.senseMapInfo(loc).getPaint().isEnemy()) {
-                    attackLoc = loc;
-                    break;
-                }
-            }
-        }
-        if (attackLoc != null) {
-            rc.attack(attackLoc);
-            return true;
-        }
-    }
+    // public static boolean canAttackEnemeyRobotFromDir(Direction dir)  throws GameActionException{
+    //     MapLocation attackLoc = rc.getLocation().add(dir);
+    //     for (int i = nearbyEnemyRobots.length; --i >= 0;) {
+    //         RobotInfo robot = nearbyEnemyRobots[i];
+    //         MapLocation loc = robot.getLocation();
+    //         if (rc.canAttack(loc) && robot.getPaintAmount() > 0 && robot.getType().isRobotType()) {
+    //             if (attackLoc == null) {
+    //                 attackLoc = loc;
+    //             } 
+    //             if (rc.senseMapInfo(loc).getPaint().isEnemy()) {
+    //                 attackLoc = loc;
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     if (attackLoc != null) {
+    //         rc.attack(attackLoc);
+    //         return true;
+    //     }
+    //     return false;
+    // }
 
 
     public static boolean tryAttackEnemyRobot() throws GameActionException {
@@ -328,7 +329,7 @@ public class Mopper extends Unit {
     public static boolean tryMoveAttackEnemyTileWithRobot() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
-            if (rc.canMove(dir) && !dirInEnemyTowerRange(dir) && hasEnemyTileWithRobot(dir)) {
+            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && hasEnemyTileWithRobot(dir)) {
                 rc.move(dir);
                 for (int j = nearbyEnemyRobots.length; --j >= 0;) {
                     RobotInfo enemy = nearbyEnemyRobots[j];
@@ -350,7 +351,7 @@ public class Mopper extends Unit {
         int bestSweep = 0;
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction moveDir = Direction.DIRECTION_ORDER[i];
-            if (rc.canMove(moveDir) && !dirInEnemyTowerRange(moveDir)) {
+            if ((i == 0 || rc.canMove(moveDir)) && !dirInEnemyTowerRange(moveDir)) {
                 for (int j = 4; --j >= 0;) {
                     Direction swingDir = cardinalDirections[j];
                     int cnt = enemiesSwept(moveDir, swingDir);
@@ -367,15 +368,16 @@ public class Mopper extends Unit {
             if (rc.canMopSwing(bestSweepDir)) {
                 rc.mopSwing(bestSweepDir);
             }
+            rc.setTimelineMarker("SWEEEEPT", 0, 255, 0);
             return true;
         } 
         return false;
     }
 
-    public static boolean tryMoveAttackEnemyRobotWithoutTile() {
+    public static boolean tryMoveAttackEnemyRobotWithoutTile() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
-            if (rc.canMove(dir) && !dirInEnemyTowerRange(dir) && getAdjacentWithEnemyRobot(dir)) {
+            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getAdjWithEnemyRobot(dir)) {
                 rc.move(dir);
                 tryAttackEnemyRobot();
                 return true;
@@ -384,12 +386,30 @@ public class Mopper extends Unit {
         return false;
     }
 
-    public static boolean tryAttackEnemyTile() {
+    public static boolean tryMoveAttackEnemyTile() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
-
+            Direction dir = Direction.DIRECTION_ORDER[i];
+            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && hasEnemyTile(dir)) {
+                rc.move(dir);
+                tryMopTile();
+                return true;
+            }
         }
+        return false;
     }
 
+    public static boolean tryAttackInternalEnemyTile() throws GameActionException {
+        for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+            Direction dir = Direction.DIRECTION_ORDER[i];
+            MapLocation attackLoc = rc.getLocation().add(dir);
+            MapInfo tile = rc.senseMapInfo(attackLoc);
+            if (rc.canAttack(attackLoc) && tile.getPaint().isEnemy() &&  countNumAllyTilesAdjacent(dir) >= 2) {
+                rc.attack(attackLoc);
+                return true;
+            }
+        }
+        return false;
+    }
 
 
     @Override
@@ -739,17 +759,20 @@ public class Mopper extends Unit {
         }
 
         public void act() throws GameActionException {
-            if (!tryMoveToFrontier()) {
-                switchStrategy(new OptimalPathingStrategy());
-                return;
-            }
-            
+            // if (!tryMoveToFrontier()) {
+            //     switchStrategy(new OptimalPathingStrategy());
+            //     return;
+            // }
+
+            tryMoveToFrontier();
 
             tryMoveToSafeTile();
 
             tryMoveLessSafeTile();
 
-            trySweep();
+            // tryAttackInternalEnemyTile();
+
+            // tryMoveSweepCrowd();
 
             tryAttackEnemyRobot();
 
@@ -759,7 +782,7 @@ public class Mopper extends Unit {
                 tryTransferPaintSoldier(rc.getPaint()-30);
             }
             
-            // trySweep();
+            trySweep();
         }
 
         @Override
@@ -783,7 +806,13 @@ public class Mopper extends Unit {
             tryMoveAttackEnemyRobotWithoutTile();
 
             // 4. Attacking enemy tile
-            tryAttackEnemyTile();
+            tryMoveAttackEnemyTile();
+
+            tryMoveToFrontier();
+
+            tryMoveToSafeTile();
+
+            tryMoveLessSafeTile();
         }
 
         @Override
