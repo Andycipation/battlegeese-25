@@ -144,7 +144,7 @@ public abstract class Unit extends Robot {
         }
 
         if (informedEnemyPaintLoc != null) {
-            rc.setIndicatorLine(rc.getLocation(), informedEnemyPaintLoc, 255, 150, 150);
+            // rc.setIndicatorLine(rc.getLocation(), informedEnemyPaintLoc, 255, 150, 150);
         }
         if (informedEmptyPaintLoc != null) {
             // rc.setIndicatorLine(locBeforeTurn, informedEmptyPaintLoc, 150, 150, 255);

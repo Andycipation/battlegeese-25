@@ -12,6 +12,11 @@ public class Tower extends Robot {
     public static int towerNumAtSpawn; // at the time of building, how many towers are there
     public static int roundNumAtSpawn;
 
+    public static MapLocation informedEnemyPaintLoc = null;
+    public static int informedEnemyPaintLocTimestamp = -1;
+    public static MapLocation informedEmptyPaintLoc = null;
+    public static int informedEmptyPaintLocTimestamp = -1;
+
     public Tower() {
         super();
         towerNumAtSpawn = numTowers;
@@ -182,6 +187,11 @@ public class Tower extends Robot {
                     }
                 }
             }
+
+            informedEnemyPaintLoc = enemyLoc;
+            informedEnemyPaintLocTimestamp = enemyLocTimestamp;
+            informedEmptyPaintLoc = emptyLoc;
+            informedEmptyPaintLocTimestamp = emptyLocTimestamp;
         }
 
     }
@@ -212,15 +222,24 @@ public class Tower extends Robot {
                 tryBuildUnit(UnitType.SOLDIER);
                 return;
             }
+            // if (unitsBuilt < 1 && towerNumAtSpawn <= 4) {
+            //     // early game mopper soldier
+            //     tryBuildUnit(UnitType.MOPPER);
+            //     return;
+            // }
             if (isPaintTower(rc.getType())) {
-                if ((rc.getRoundNum() > 300 && rc.getPaint() >= 800) || (rc.getChips() > 1400 && rc.getPaint() >= 300)) {
+                if ((rc.getChips() > 1400 && rc.getPaint() >= 300)) {
                     // Pick random unit to build (with weights)
-                    tryBuildRandomUnit(20, numTowers, numTowers);
+                    if (informedEnemyPaintLoc != null) {
+                        tryBuildRandomUnit(10, 5, 25);
+                    } else if (rng.nextInt(3) == 0) {
+                        tryBuildUnit(UnitType.SOLDIER);
+                    }
                 }
             } 
             else { // defense or money towers can always just produce units given theres enough chips :)
                 if (rc.getChips() > 1400) {
-                    tryBuildRandomUnit(20, numTowers, numTowers);
+                    tryBuildUnit(UnitType.MOPPER);
                 }
             }
         }
