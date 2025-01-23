@@ -406,43 +406,29 @@ public class Mopper extends Unit {
         return false;
     }
 
-    public static boolean tryAttackInternalEnemyTile() throws GameActionException {
-        for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
-            Direction dir = Direction.DIRECTION_ORDER[i];
-            MapLocation attackLoc = rc.getLocation().add(dir);
-            MapInfo tile = rc.senseMapInfo(attackLoc);
-            if (rc.canAttack(attackLoc) && tile.getPaint().isEnemy() &&  getNumAllyTilesAdjacent(dir) >= 2) {
-                rc.attack(attackLoc);
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     public static boolean tryAttackMostNestedEnemyTile() throws GameActionException {
         MapLocation curLoc = rc.getLocation();
-        Direction bestMoveDir = null;
         MapLocation bestAttackLoc = null;
         int mostAdjacentCnt = 0;
-        for (int i = nearbyMapInfos.length; --i >= 0;) {
-            MapInfo tile = nearbyMapInfos[i];
-            MapLocation loc = tile.getMapLocation();
-            Direction dir = curLoc.directionTo(loc);
-            if ((dir == Direction.CENTER || rc.canMove(dir)) && tile.getPaint().isEnemy() && Math.abs(loc.x-curLoc.x) <= 2 && Math.abs(loc.y-curLoc.y) <= 2 && !dirInEnemyTowerRange(dir)) {
-                int cur = getNumAllyTilesAdjacent(dir);
-                if (cur > mostAdjacentCnt) {
-                    bestMoveDir = dir;
-                    bestAttackLoc = loc;
-                    mostAdjacentCnt = cur;
+        for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+            Direction dir = Direction.DIRECTION_ORDER[i];
+            MapLocation attackLoc = curLoc.add(dir);
+            if (!withinBounds(attackLoc)) continue;
+            MapInfo tile = rc.senseMapInfo(attackLoc);
+            if (tile.getPaint().isEnemy()) {
+                int cnt = getNumAllyTilesAdjacent(dir);
+                message += "reached";
+                if (cnt > mostAdjacentCnt) {
+                    bestAttackLoc = attackLoc;
+                    mostAdjacentCnt = cnt;
                 }
             }
         }
-        if (bestMoveDir != null) {
-            mdir(bestMoveDir);
+        if (bestAttackLoc != null) {
             rc.attack(bestAttackLoc);
             message += "tryAttackMostNestedEnemyTile";
-            message += "bruh "  + " " +getNumAllyTilesAdjacent(bestMoveDir);
+            message += "bruh " + mostAdjacentCnt + " " + bestAttackLoc;
             return true;
         }
         return false;
@@ -699,7 +685,7 @@ public class Mopper extends Unit {
                 if (!acted) acted |= tryMoveAttackEnemyRobotWithoutTile();
                 
                 // 4. Attacking enemy tile, pick the one with most adjacent friendly paint (nested)
-                if (!acted) acted |= tryAttackMostNestedEnemyTile();
+                if (!acted) tryAttackMostNestedEnemyTile();
                 // System.out.println("Acting: " + (Clock.getBytecodeNum() - bytecode));
             }
 
