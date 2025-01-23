@@ -301,7 +301,7 @@ public class Tower extends Robot {
                 if (rc.getChips() > 1400 && rc.getPaint() >= 300) {
                     // Pick random unit to build (with weights)
                     if (informedEnemyPaintLoc != null) {
-                        tryBuildRandomUnit(10, 5, 25);
+                        tryBuildRandomUnit(10, 25, 25);
                     } else if (rng.nextInt(3) == 0) {
                         tryBuildUnit(UnitType.SOLDIER, dirToCenter);
                     }
