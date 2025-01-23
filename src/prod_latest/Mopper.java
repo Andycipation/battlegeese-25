@@ -204,28 +204,28 @@ public class Mopper extends Unit {
             MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
             if (tile.getPaint().isAlly()) {
                 switch ((diff.x + 4) * 9 + (diff.y + 4)) {
-                    case 21: numAllyTilesAdjacent |= 16777216; break; // (-2, -1)
-                    case 22: numAllyTilesAdjacent |= 8; break; // (-2, 0)
-                    case 23: numAllyTilesAdjacent |= 64; break; // (-2, 1)
-                    case 29: numAllyTilesAdjacent |= 16777216; break; // (-1, -2)
-                    case 30: numAllyTilesAdjacent |= 18874376; break; // (-1, -1)
-                    case 31: numAllyTilesAdjacent |= 16777289; break; // (-1, 0)
-                    case 32: numAllyTilesAdjacent |= 584; break; // (-1, 1)
-                    case 33: numAllyTilesAdjacent |= 64; break; // (-1, 2)
-                    case 38: numAllyTilesAdjacent |= 2097152; break; // (0, -2)
-                    case 39: numAllyTilesAdjacent |= 19136513; break; // (0, -1)
-                    case 40: numAllyTilesAdjacent |= 2130441; break; // (0, 0)
-                    case 41: numAllyTilesAdjacent |= 4673; break; // (0, 1)
-                    case 42: numAllyTilesAdjacent |= 512; break; // (0, 2)
-                    case 47: numAllyTilesAdjacent |= 262144; break; // (1, -2)
-                    case 48: numAllyTilesAdjacent |= 2392064; break; // (1, -1)
-                    case 49: numAllyTilesAdjacent |= 299009; break; // (1, 0)
-                    case 50: numAllyTilesAdjacent |= 37376; break; // (1, 1)
-                    case 51: numAllyTilesAdjacent |= 4096; break; // (1, 2)
-                    case 57: numAllyTilesAdjacent |= 262144; break; // (2, -1)
-                    case 58: numAllyTilesAdjacent |= 32768; break; // (2, 0)
-                    case 59: numAllyTilesAdjacent |= 4096; break; // (2, 1)
-                    case 60: numAllyTilesAdjacent |= 16; break; // (2, 2)
+                    case 21: numAllyTilesAdjacent += 16777216; break; // (-2, -1)
+                    case 22: numAllyTilesAdjacent += 8; break; // (-2, 0)
+                    case 23: numAllyTilesAdjacent += 64; break; // (-2, 1)
+                    case 29: numAllyTilesAdjacent += 16777216; break; // (-1, -2)
+                    case 30: numAllyTilesAdjacent += 18874376; break; // (-1, -1)
+                    case 31: numAllyTilesAdjacent += 16777289; break; // (-1, 0)
+                    case 32: numAllyTilesAdjacent += 584; break; // (-1, 1)
+                    case 33: numAllyTilesAdjacent += 64; break; // (-1, 2)
+                    case 38: numAllyTilesAdjacent += 2097152; break; // (0, -2)
+                    case 39: numAllyTilesAdjacent += 19136513; break; // (0, -1)
+                    case 40: numAllyTilesAdjacent += 2130441; break; // (0, 0)
+                    case 41: numAllyTilesAdjacent += 4673; break; // (0, 1)
+                    case 42: numAllyTilesAdjacent += 512; break; // (0, 2)
+                    case 47: numAllyTilesAdjacent += 262144; break; // (1, -2)
+                    case 48: numAllyTilesAdjacent += 2392064; break; // (1, -1)
+                    case 49: numAllyTilesAdjacent += 299009; break; // (1, 0)
+                    case 50: numAllyTilesAdjacent += 37376; break; // (1, 1)
+                    case 51: numAllyTilesAdjacent += 4096; break; // (1, 2)
+                    case 57: numAllyTilesAdjacent += 262144; break; // (2, -1)
+                    case 58: numAllyTilesAdjacent += 32768; break; // (2, 0)
+                    case 59: numAllyTilesAdjacent += 4096; break; // (2, 1)
+                    case 60: numAllyTilesAdjacent += 16; break; // (2, 2)
                 }
             }
             else if (tile.getPaint().isEnemy()){
@@ -681,7 +681,7 @@ public class Mopper extends Unit {
             if (rc.isMovementReady() && rc.isActionReady()) {
                 int bytecode = Clock.getBytecodeNum();
                 precomputeMovementInfo();
-                // System.out.println("Precomp: " + (Clock.getBytecodeNum() - bytecode));
+                System.out.println("Precomp: " + (Clock.getBytecodeNum() - bytecode));
                 
                 // for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
                     //     Direction dir = Direction.DIRECTION_ORDER[i];
@@ -700,7 +700,7 @@ public class Mopper extends Unit {
                 
                 // 4. Attacking enemy tile, pick the one with most adjacent friendly paint (nested)
                 if (!acted) acted |= tryAttackMostNestedEnemyTile();
-                // System.out.println("Acting: " + (Clock.getBytecodeNum() - bytecode));
+                System.out.println("Acting: " + (Clock.getBytecodeNum() - bytecode));
             }
 
             if (!acted) {
@@ -712,7 +712,7 @@ public class Mopper extends Unit {
                 if (!acted) acted |= tryMoveToSafeTile();
     
                 if (!acted) acted |= tryMoveLessSafeTile();
-                // System.out.println("Moving: " + (Clock.getBytecodeNum() - bytecode));
+                System.out.println("Moving: " + (Clock.getBytecodeNum() - bytecode));
             }
 
             if (rc.getPaint() >= 50) {
