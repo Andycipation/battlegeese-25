@@ -420,7 +420,7 @@ public class Mopper extends Unit {
             if (tile.getPaint().isEnemy()) {
                 int cnt = getNumAllyTilesAdjacent(dir);
                 message += "reached";
-                if (cnt > mostAdjacentCnt) {
+                if (cnt > mostAdjacentCnt || bestAttackLoc == null) {
                     bestAttackLoc = attackLoc;
                     mostAdjacentCnt = cnt;
                 }
