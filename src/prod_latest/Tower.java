@@ -31,18 +31,6 @@ public class Tower extends Robot {
         commsStrat.receiveAndBroadcast();
     }
 
-    public static boolean tryBuildUnit(UnitType robotType) throws GameActionException {
-        for (int i = adjacentDirections.length; --i >= 0; ) {
-            MapLocation loc = locBeforeTurn.add(adjacentDirections[i]);
-            if (rc.canBuildRobot(robotType, loc)) {
-                rc.buildRobot(robotType, loc);
-                unitsBuilt++;
-                return true;
-            }
-        }
-        return false;
-    }
-
     public static void playSpawnUnits() throws GameActionException {
         // demo of logger
         Logger.log("Units built: " + unitsBuilt);
@@ -202,44 +190,126 @@ public class Tower extends Robot {
 
     static class MapSpawnStrategy extends SpawnStrategy {
 
+        static int initialSoldiersToSpawn;
+        static Direction dirToCenter;
+        static Direction nextSpawnDir;
+        static int numMoppersSpawned;
+
+        public MapSpawnStrategy() {
+            // Need to compute this in here, doesn't work to get the Globals variable
+            final int towerNumAtSpawn = rc.getNumberTowers();
+            // System.out.println("spawned with " + towerNumAtSpawn + " towers alive");
+
+            // Compute the initial number of soldiers to spawn'
+            if (towerNumAtSpawn <= 2) {
+                if (isPaintTower(rc.getType())) {
+                    final int numTiles = mapHeight * mapWidth;
+                    if (numTiles > 2500) {
+                        initialSoldiersToSpawn = 4;
+                    } else if (numTiles > 1500) {
+                        initialSoldiersToSpawn = 3;
+                    } else {
+                        initialSoldiersToSpawn = 2;
+                    }
+                } else {
+                    initialSoldiersToSpawn = 2;
+                }
+            } else {
+                initialSoldiersToSpawn = 0;
+            }
+            numMoppersSpawned = 0;
+
+            var mapCenter = new MapLocation(mapWidth / 2, mapHeight / 2);
+            var myLoc = rc.getLocation();
+            dirToCenter = myLoc.directionTo(mapCenter);
+            nextSpawnDir = dirToCenter;
+        }
+
+        public static Direction tryBuildUnit(UnitType unitType, Direction preferredDir) throws GameActionException {
+            // Returns the direction the unit was built, if successful, or null otherwise
+            var dir = preferredDir;
+            for (int i = 8; --i >= 0;) {
+                var loc = locBeforeTurn.add(dir);
+                if (loc.add(dir).distanceSquaredTo(locBeforeTurn) <= 4) {
+                    loc = loc.add(dir);
+                }
+                if (rc.canBuildRobot(unitType, loc)) {
+                    rc.buildRobot(unitType, loc);
+                    unitsBuilt++;
+                    return dir;
+                }
+                dir = dir.rotateRight();
+            }
+            return null;
+        }
+
         public static void tryBuildRandomUnit(int soldierWeight, int splasherWeight, int mopperWeight) throws GameActionException {
             UnitType unitPicked = switch (randChoice(soldierWeight, splasherWeight, mopperWeight)) {
                 case 0 -> UnitType.SOLDIER;
                 case 1 -> UnitType.SPLASHER;
                 default -> UnitType.MOPPER;
             };
-            tryBuildUnit(unitPicked);
+            tryBuildUnit(unitPicked, dirToCenter);
+        }
+
+        static boolean hasAdjacentAlly() {
+            for (int i = nearbyAllyRobots.length; --i >= 0;) {
+                var info = nearbyAllyRobots[i];
+                if (info.location.distanceSquaredTo(rc.getLocation()) <= 2) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        static MapLocation hasNearbyEnemy(UnitType type) {
+            for (int i = nearbyEnemyRobots.length; --i >= 0;) {
+                var info = nearbyEnemyRobots[i];
+                if (info.type == type) {
+                    return info.location;
+                }
+            }
+            return null;
         }
 
         @Override
         public void act() throws GameActionException {
-            if (rc.getRoundNum() < 20 && rc.getRoundNum() < roundNumAtSpawn + 2) {
+            if (roundNum > 20 && roundNum < roundNumAtSpawn + 2 && hasAdjacentAlly()) {
                 // Don't spawn right away early game in case someone is waiting to withdraw paint
                 return;
             }
-            if (unitsBuilt < 2 && towerNumAtSpawn <= 2) {
-                // early game build soldier soldier
-                tryBuildUnit(UnitType.SOLDIER);
+            if (initialSoldiersToSpawn > 0) {
+                if (tryBuildUnit(UnitType.SOLDIER, nextSpawnDir) != null) {
+                    initialSoldiersToSpawn -= 1;
+                    nextSpawnDir = nextSpawnDir.rotateRight();
+                }
                 return;
             }
-            // if (unitsBuilt < 1 && towerNumAtSpawn <= 4) {
-            //     // early game mopper soldier
-            //     tryBuildUnit(UnitType.MOPPER);
-            //     return;
-            // }
+
+            if (numMoppersSpawned < 3) {
+                var enemyLoc = hasNearbyEnemy(UnitType.SOLDIER);
+                if (enemyLoc != null) {
+                    var dir = rc.getLocation().directionTo(enemyLoc);
+                    if (tryBuildUnit(UnitType.MOPPER, dir) != null) {
+                        numMoppersSpawned += 1;
+                        return;
+                    }
+                }
+            }
+
             if (isPaintTower(rc.getType())) {
-                if ((rc.getChips() > 1400 && rc.getPaint() >= 300)) {
+                if (rc.getChips() > 1400 && rc.getPaint() >= 300) {
                     // Pick random unit to build (with weights)
                     if (informedEnemyPaintLoc != null) {
                         tryBuildRandomUnit(10, 5, 25);
                     } else if (rng.nextInt(3) == 0) {
-                        tryBuildUnit(UnitType.SOLDIER);
+                        tryBuildUnit(UnitType.SOLDIER, dirToCenter);
                     }
                 }
-            } 
-            else { // defense or money towers can always just produce units given theres enough chips :)
-                if (rc.getChips() > 1400) {
-                    tryBuildUnit(UnitType.MOPPER);
+            } else {
+                // defense or money towers can always just produce units given theres enough chips :)
+                if (roundNum > 50 && rc.getChips() > 1400) {
+                    tryBuildUnit(UnitType.MOPPER, dirToCenter);
                 }
             }
         }
