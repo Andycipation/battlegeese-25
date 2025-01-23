@@ -668,7 +668,7 @@ public class Mopper extends Unit {
             if (rc.isMovementReady() && rc.isActionReady()) {
                 int bytecode = Clock.getBytecodeNum();
                 precomputeMovementInfo();
-                System.out.println("Precomp: " + (Clock.getBytecodeNum() - bytecode));
+                // System.out.println("Precomp: " + (Clock.getBytecodeNum() - bytecode));
                 
                 // for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
                     //     Direction dir = Direction.DIRECTION_ORDER[i];
@@ -687,7 +687,7 @@ public class Mopper extends Unit {
                 
                 // 4. Attacking enemy tile, pick the one with most adjacent friendly paint (nested)
                 if (!acted) tryAttackMostNestedEnemyTile();
-                System.out.println("Acting: " + (Clock.getBytecodeNum() - bytecode));
+                // System.out.println("Acting: " + (Clock.getBytecodeNum() - bytecode));
             }
 
             if (!acted) {
@@ -699,7 +699,7 @@ public class Mopper extends Unit {
                 if (!acted) acted |= tryMoveToSafeTile();
     
                 if (!acted) acted |= tryMoveLessSafeTile();
-                System.out.println("Moving: " + (Clock.getBytecodeNum() - bytecode));
+                // System.out.println("Moving: " + (Clock.getBytecodeNum() - bytecode));
             }
 
             if (rc.getPaint() >= 50) {

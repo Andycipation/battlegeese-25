@@ -1,7 +1,6 @@
 package prod_latest;
 
 import battlecode.common.*;
-import prod_latest.Mopper.MopperStrategy;
 
 public class Splasher extends Unit {
 
@@ -9,18 +8,19 @@ public class Splasher extends Unit {
     public static boolean useNetwork = rng.nextInt(2) == 0;
     
 
-    public static void switchStrategy(SplasherStrategy newStrategy) {
+    public static void switchStrategy(SplasherStrategy newStrategy, boolean acted) throws GameActionException{
         strategy = newStrategy;
+        if (!acted) strategy.act();
     }
 
     public static void yieldStrategy() throws GameActionException{
-        strategy = new AggroStrategy();
+        strategy = new ExploreStrategy();
     }
 
     @Override
     void play() throws GameActionException {
         if (strategy == null) {
-            switchStrategy(new AggroStrategy());
+            strategy = new ExploreStrategy();
         }
         strategy.act();
         Logger.log(strategy.toString());
@@ -36,6 +36,63 @@ public class Splasher extends Unit {
     static abstract class SplasherStrategy {
         abstract public void act() throws GameActionException;
     }
+
+    static class ExploreStrategy extends SplasherStrategy {
+    
+        public static MapLocation target;
+        public static int turnsNotMoved;
+        public static int switchStrategyCooldown;
+    
+        public ExploreStrategy() throws GameActionException {
+            turnsNotMoved = 0;
+
+            MapLocation possibleTarget = null;
+            if (informedEnemyPaintLoc != null && rc.canSenseLocation(informedEnemyPaintLoc) && rc.senseMapInfo(informedEnemyPaintLoc).getPaint().isEnemy()) {
+                possibleTarget = informedEnemyPaintLoc;
+            }
+            if (possibleTarget != null) {
+                target = project(locBeforeTurn, possibleTarget);
+            }
+            else {
+                target = new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
+            }
+        }
+    
+        @Override
+        public void act() throws GameActionException {
+            for (int i = nearbyMapInfos.length; --i >= 0;) {
+                MapInfo tile = nearbyMapInfos[i];
+                if (tile.getPaint().isEnemy()) {
+                    switchStrategy(new AggroStrategy(), false);
+                    return;
+                }
+            }
+
+            if (chebyshevDist(locBeforeTurn, target) <= 2) { // my target is likely outdated, reset!
+                switchStrategy(new ExploreStrategy(), false);
+                return;
+            }
+
+            BugNav.moveToward(target);
+            rc.setIndicatorLine(rc.getLocation(), target, 0, 255, 0);
+            if (rc.getLocation() == locBeforeTurn) {
+                turnsNotMoved++;
+                if (turnsNotMoved >= 3) {
+                    yieldStrategy();
+                    return;
+                }
+            }
+
+            else turnsNotMoved = 0;
+        }
+    
+        @Override
+        public String toString() {
+            return "Explore " + " " + target;
+        }
+    }
+
+
 
     static class AggroStrategy extends SplasherStrategy {
 
