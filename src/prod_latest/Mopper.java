@@ -106,7 +106,7 @@ public class Mopper extends Unit {
             RobotInfo robot = nearbyEnemyRobots[i];
             if (robot.getType().isTowerType()) continue;
             MapLocation loc = robot.getLocation();
-            MapLocation diff = loc.translate(locBeforeTurn.x, locBeforeTurn.y);
+            MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
             switch ((diff.x + 4) * 9 + (diff.y)) {
                 case 7: sweepScore[8] |= 4096; break; // (-3, -2)
                 case 8: sweepScore[1] |= 4096; sweepScore[8] |= 4096; break; // (-3, -1)
@@ -186,7 +186,7 @@ public class Mopper extends Unit {
         for (int i = nearbyMapInfos.length; --i >= 0;) {
             MapInfo tile = nearbyMapInfos[i];
             MapLocation loc = tile.getMapLocation();
-            MapLocation diff = loc.translate(locBeforeTurn.x, locBeforeTurn.y);
+            MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
             if (tile.getPaint().isAlly()) {
                 switch ((diff.x + 4) * 9 + (diff.y + 4)) {
                     case 21: numAllyTilesAdjacent |= 16777216; break; // (-2, -1)
