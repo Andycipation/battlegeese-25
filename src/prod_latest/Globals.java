@@ -57,6 +57,8 @@ public class Globals {
     public static boolean[][] moneyTowerPattern;
     public static boolean[][] resourcePattern;
 
+    public static MapLocation spawnLocation;
+
     public static boolean[][] patternToBooleanArray(int pattern) {
         boolean[][] boolArray = new boolean[5][5];
         for (int i = 0; i < 5; i++) {
@@ -92,6 +94,8 @@ public class Globals {
         defenseTowerPattern = patternToBooleanArray(GameConstants.DEFENSE_TOWER_PATTERN);
         moneyTowerPattern = patternToBooleanArray(GameConstants.MONEY_TOWER_PATTERN);
         resourcePattern = patternToBooleanArray(GameConstants.RESOURCE_PATTERN);
+
+        spawnLocation = rc.getLocation();
 
         int mapArea = mapWidth * mapHeight;
         if (mapArea < 900) {
@@ -199,6 +203,18 @@ public class Globals {
         return loc.translate(mapWidth-loc.x*2 + 1, mapHeight-loc.y*2+1);
     }
 
+    public static MapLocation reflectX(MapLocation loc) {
+        return new MapLocation(mapWidth - loc.x - 1, loc.y);
+    }
+
+    public static MapLocation reflectY(MapLocation loc) {
+        return new MapLocation(loc.x, mapHeight - loc.y - 1);
+    }
+
+    public static MapLocation reflectXY(MapLocation loc) {
+        return new MapLocation(mapWidth - loc.x - 1, mapHeight - loc.y - 1);
+    }
+
     public static MapLocation[] sorted(MapLocation curLoc, MapLocation[] locs) {
         int n = locs.length;
     
@@ -294,5 +310,33 @@ public class Globals {
 
     public static int chebyshevDist(MapLocation a, MapLocation b) {
         return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+    }
+
+    // project the ray a -> b onto the border of the map, then returns this location
+    // assumes a != b, written by copilot so idk how good this is lol
+    public static MapLocation project(MapLocation a, MapLocation b) {
+        int dx = b.x - a.x;
+        int dy = b.y - a.y;
+        int x = a.x;
+        int y = a.y;
+        if (dx == 0) {
+            return new MapLocation(x, dy > 0 ? mapHeight - 1 : 0);
+        }
+        if (dy == 0) {
+            return new MapLocation(dx > 0 ? mapWidth - 1 : 0, y);
+        }
+        // project, stopping on all four borders
+        int x1 = (dx > 0 ? mapWidth - 1 : 0);
+        int y1 = (dy > 0 ? mapHeight - 1 : 0);
+        int x2 = (int)(dy > 0 ? (double)(mapHeight - 1 - y) * dx / dy + x : -y * dx / dy + x);
+        int y2 = (int)(dx > 0 ? (double)(mapWidth - 1 - x) * dy / dx + y : -x * dy / dx + y);
+        if (0 <= x2 && x2 < mapWidth) {
+            return clamp(new MapLocation(x2, y1));
+        }
+        return clamp(new MapLocation(x1, y2));
+    }
+
+    public static MapLocation clamp(MapLocation loc) {
+        return new MapLocation(Math.min(Math.max(0, loc.x), mapWidth - 1), Math.min(Math.max(0, loc.y), mapHeight - 1));
     }
 }
