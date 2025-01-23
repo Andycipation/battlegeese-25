@@ -309,6 +309,7 @@ public class Tower extends Robot {
             } else {
                 // defense or money towers can always just produce units given theres enough chips :)
                 if (roundNum > 50 && rc.getChips() > 1400) {
+                    tryBuildUnit(UnitType.SOLDIER, dirToCenter);
                     tryBuildUnit(UnitType.MOPPER, dirToCenter);
                 }
             }

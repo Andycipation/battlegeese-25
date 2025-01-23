@@ -313,7 +313,7 @@ public class Soldier extends Unit {
                     painted = tryPaint(paintLoc, getSrpPaintColor(paintLoc));
                 }
 
-                if (newLoc.distanceSquaredTo(srpCenter) <= 2 && !painted) {
+                if (newLoc.distanceSquaredTo(srpCenter) <= 2 && rc.isActionReady() && !painted) {
                     // SRP is finished
                     state = null;
                     srpDone[srpCenter.y] |= 1L << srpCenter.x;
