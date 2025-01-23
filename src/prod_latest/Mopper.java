@@ -19,7 +19,7 @@ public class Mopper extends Unit {
     }
 
     public static void yieldStrategy() throws GameActionException {
-        strategy = new ExploreStrategy();
+        strategy = new OptimalPathingStrategy();
         // strategy = new ExploreStrategy(8, 6);
     }
 
@@ -328,11 +328,18 @@ public class Mopper extends Unit {
     public static boolean getMoveAdjEnemyRobot(Direction moveDir) {
         return (1 & (adjWithEnemyRobot >> (moveDir.getDirectionOrderNum()))) == 1;
     }
+
+    public static boolean isEnemyTerritory(Direction dir) throws GameActionException {
+        MapLocation loc = rc.getLocation().add(dir);
+        if (!withinBounds(loc)) return false;
+        return rc.senseMapInfo(loc).getPaint().isEnemy();
+    }
     
     // return true if just moved
     public static boolean tryMoveAttackEnemyTileWithEnemyRobot() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
+            if (isEnemyTerritory(dir)) continue;
             if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getMoveAdjEnemyTileWithEnemyRobot(dir)) {
                 mdir(dir);
                 for (int j = nearbyEnemyRobots.length; --j >= 0;) {
@@ -357,6 +364,7 @@ public class Mopper extends Unit {
         int bestSweep = 0;
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction moveDir = Direction.DIRECTION_ORDER[i];
+            if (isEnemyTerritory(moveDir)) continue;
             if ((i == 0 || rc.canMove(moveDir)) && !dirInEnemyTowerRange(moveDir)) {
                 for (int j = 4; --j >= 0;) {
                     Direction swingDir = cardinalDirections[j];
@@ -385,6 +393,7 @@ public class Mopper extends Unit {
     public static boolean tryMoveAttackEnemyRobotWithoutTile() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
+            if (isEnemyTerritory(dir)) continue;
             if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getMoveAdjEnemyRobot(dir)) {
                 mdir(dir);
                 tryAttackEnemyRobot();
@@ -398,6 +407,7 @@ public class Mopper extends Unit {
     public static boolean tryMoveAttackEnemyTile() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
+            if (isEnemyTerritory(dir)) continue;
             if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getMoveAdjEnemyTile(dir)) {
                 rc.move(dir);
                 tryMopTile();
@@ -420,7 +430,7 @@ public class Mopper extends Unit {
             if (tile.getPaint().isEnemy()) {
                 int cnt = getNumAllyTilesAdjacent(dir);
                 message += "reached";
-                if (cnt > mostAdjacentCnt) {
+                if (cnt > mostAdjacentCnt || bestAttackLoc == null) {
                     bestAttackLoc = attackLoc;
                     mostAdjacentCnt = cnt;
                 }
@@ -694,7 +704,6 @@ public class Mopper extends Unit {
                 message += "not acted";
                 tryMoveToFrontier();
                 int bytecode = Clock.getBytecodeNum();
-                if (!acted) acted |= tryMoveToFrontier();
     
                 if (!acted) acted |= tryMoveToSafeTile();
     

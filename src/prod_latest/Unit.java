@@ -66,10 +66,9 @@ public abstract class Unit extends Robot {
         //     memory[loc.x][loc.y] = tile.isPassable() ? MapLocationType.PASSABLE : (tile.isWall() ? MapLocationType.WALL : MapLocationType.RUIN);
         // }
 
-        int[] pi = ranPerm(nearbyMapInfos.length);
-
+        int offset = rng.nextInt(nearbyMapInfos.length);
         for (int i = nearbyMapInfos.length; --i >= 0;) {
-            MapInfo tile = nearbyMapInfos[pi[i]];
+            MapInfo tile = nearbyMapInfos[(i + offset)%nearbyMapInfos.length];
             if (!tile.isPassable()) continue;
             MapLocation loc = tile.getMapLocation();
             if (tile.getPaint().isEnemy()) {
@@ -171,12 +170,7 @@ public abstract class Unit extends Robot {
 
     public static boolean tryMoveToFrontier() throws GameActionException {
         MapLocation attackLoc = informedEnemyPaintLoc;
-        // if (rc.getLocation().isWithinDistanceSquared(invertLoc(spawnLocation), 20)) {
-        //     reachedReflected = true;
-        // }
-        // if (!reachedReflected) {
-        //     attackLoc = invertLoc(spawnLocation);
-        // }
+        if (attackLoc != null) attackLoc = project(rc.getLocation(), attackLoc);
 
         if (attackLoc != null && rc.getLocation().isWithinDistanceSquared(attackLoc, visionRadiusSquared) 
         && rc.senseMapInfo(attackLoc).getPaint() == PaintType.EMPTY) {
