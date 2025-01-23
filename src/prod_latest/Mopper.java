@@ -19,7 +19,7 @@ public class Mopper extends Unit {
     }
 
     public static void yieldStrategy() throws GameActionException {
-        strategy = new ExploreStrategy();
+        strategy = new OptimalPathingStrategy();
         // strategy = new ExploreStrategy(8, 6);
     }
 
@@ -694,7 +694,6 @@ public class Mopper extends Unit {
                 message += "not acted";
                 tryMoveToFrontier();
                 int bytecode = Clock.getBytecodeNum();
-                if (!acted) acted |= tryMoveToFrontier();
     
                 if (!acted) acted |= tryMoveToSafeTile();
     
