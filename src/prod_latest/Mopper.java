@@ -3,6 +3,7 @@ package prod_latest;
 import battlecode.common.*;
 
 public class Mopper extends Unit {
+    public static String message = "";
 
     public static MopperStrategy strategy;
     public static int[] sweepScore = new int[9];
@@ -338,9 +339,11 @@ public class Mopper extends Unit {
                     RobotInfo enemy = nearbyEnemyRobots[j];
                     if (enemy.getType().isRobotType() && rc.canAttack(enemy.getLocation()) && rc.senseMapInfo(enemy.getLocation()).getPaint().isEnemy()) {
                         rc.attack(enemy.getLocation());
+                        message += "MoveAttackEnemyTileWithEnemyRobot";
                         return true;
                     }
                 }
+                message += "MoveAttackEnemyTileWithEnemyRobot";
                 return true;
             }
         }
@@ -371,7 +374,8 @@ public class Mopper extends Unit {
             if (rc.canMopSwing(bestSweepDir)) {
                 rc.mopSwing(bestSweepDir);
             }
-            rc.setTimelineMarker("SWEEEEPT", 0, 255, 0);
+            // rc.setTimelineMarker("SWEEEEPT", 0, 255, 0);
+            message += "tryMoveSweepCrowd";
             return true;
         } 
         return false;
@@ -383,6 +387,7 @@ public class Mopper extends Unit {
             if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getMoveAdjEnemyRobot(dir)) {
                 mdir(dir);
                 tryAttackEnemyRobot();
+                message += "tryMoveAttackEnemyRobotWithoutTile";
                 return true;
             }
         }
@@ -424,7 +429,7 @@ public class Mopper extends Unit {
             MapInfo tile = nearbyMapInfos[i];
             MapLocation loc = tile.getMapLocation();
             Direction dir = curLoc.directionTo(loc);
-            if (rc.canMove(dir) && tile.getPaint().isEnemy() && Math.abs(loc.x-curLoc.x) <= 2 && Math.abs(loc.y-curLoc.y) <= 2 && !dirInEnemyTowerRange(dir)) {
+            if ((dir == Direction.CENTER || rc.canMove(dir)) && tile.getPaint().isEnemy() && Math.abs(loc.x-curLoc.x) <= 2 && Math.abs(loc.y-curLoc.y) <= 2 && !dirInEnemyTowerRange(dir)) {
                 int cur = getNumAllyTilesAdjacent(dir);
                 if (cur > mostAdjacentCnt) {
                     bestMoveDir = dir;
@@ -436,6 +441,8 @@ public class Mopper extends Unit {
         if (bestMoveDir != null) {
             mdir(bestMoveDir);
             rc.attack(bestAttackLoc);
+            message += "tryAttackMostNestedEnemyTile";
+            message += "bruh "  + " " +getNumAllyTilesAdjacent(bestMoveDir);
             return true;
         }
         return false;
@@ -681,8 +688,10 @@ public class Mopper extends Unit {
     }
 
     static class OptimalPathingStrategy extends MopperStrategy {
+
         public void act() throws GameActionException {
             boolean acted = false;
+            message = "";
             if (rc.isMovementReady() && rc.isActionReady()) {
                 int bytecode = Clock.getBytecodeNum();
                 precomputeMovementInfo();
@@ -707,6 +716,7 @@ public class Mopper extends Unit {
             }
 
             if (!acted) {
+                message += "not acted";
                 tryMoveToFrontier();
     
                 tryMoveToSafeTile();
@@ -721,7 +731,7 @@ public class Mopper extends Unit {
 
         @Override
         public String toString() {
-            return "Optimal Pathing";
+            return "Optimal Pathing: " + message;
         }
     }
 }
