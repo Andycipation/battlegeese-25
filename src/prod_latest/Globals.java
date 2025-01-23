@@ -339,4 +339,9 @@ public class Globals {
     public static MapLocation clamp(MapLocation loc) {
         return new MapLocation(Math.min(Math.max(0, loc.x), mapWidth - 1), Math.min(Math.max(0, loc.y), mapHeight - 1));
     }
+
+    public static void mdir(Direction dir) throws GameActionException {
+        if (dir.getDirectionOrderNum() == 0) return;
+        rc.move(dir);
+    }
 }
