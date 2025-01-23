@@ -99,14 +99,22 @@ public class Mopper extends Unit {
     // }
 
     public static boolean tryTransferPaint(int amount) throws GameActionException {
+        RobotInfo bestAlly = null;
+        int leastPaint = 10000;
         for (int i = nearbyAllyRobots.length; --i >= 0;) {
             RobotInfo ally = nearbyAllyRobots[i];
-            if (!ally.getType().isRobotType() || ally.getType() == UnitType.MOPPER) continue;
+            if (!ally.getType().isRobotType() || (ally.getPaintAmount() > 0 && ally.getType() == UnitType.MOPPER)) continue;
             if (rc.canTransferPaint(ally.getLocation(), amount) && ally.getPaintAmount() + amount <= ally.getType().paintCapacity) {
-                rc.transferPaint(ally.getLocation(), amount);
-                rc.setTimelineMarker("transferred paint", 0, 0, 255);
-                return true;
+                if (ally.getPaintAmount() < leastPaint) {
+                    leastPaint = ally.getPaintAmount();
+                    bestAlly = ally;
+                }
             }
+        }
+        if (bestAlly != null) {
+            rc.transferPaint(bestAlly.getLocation(), amount);
+            rc.setTimelineMarker("transferred paint!", 0, 255, 0);
+            return true;
         }
         return false;
     }
@@ -452,7 +460,7 @@ public class Mopper extends Unit {
         }
         strategy.act();
         Logger.log(strategy.toString());
-        if (rc.getPaint() < 30  && paintTowerLoc != null && rc.getChips() < 2000) {
+        if (rc.getPaint() < 30  && paintTowerLoc != null && rc.getChips() < 3000) {
             Logger.log("refilling paint");
             Logger.flush();
             strategy = new RefillPaintStrategy(100);
