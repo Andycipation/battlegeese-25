@@ -362,7 +362,6 @@ public class Mopper extends Unit {
                     Direction swingDir = cardinalDirections[j];
                     int cnt = getMoveEnemiesSwept(moveDir, swingDir);
                     if (cnt > bestSweep) {
-                        message += "gay: " + cnt;
                         bestMoveDir = moveDir;
                         bestSweepDir = swingDir;
                         bestSweep = cnt;
@@ -371,7 +370,7 @@ public class Mopper extends Unit {
             }
         }
         message += "sweep gets " + bestSweep;
-        if (bestMoveDir != null && bestSweep >= 1) {
+        if (bestMoveDir != null && bestSweep >= 2) {
             mdir(bestMoveDir);
             if (rc.canMopSwing(bestSweepDir)) {
                 rc.mopSwing(bestSweepDir);
