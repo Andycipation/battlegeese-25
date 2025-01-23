@@ -12,8 +12,9 @@ public class Mopper extends Unit {
     public static int[] adjacentAllyTiles;
     public static int numAllyTilesAdjacent;
 
-    public static void switchStrategy(MopperStrategy newStrategy) {
+    public static void switchStrategy(MopperStrategy newStrategy, boolean acted) throws GameActionException {
         strategy = newStrategy;
+        if (!acted) strategy.act();
     }
 
     public static void yieldStrategy() {
@@ -119,7 +120,7 @@ public class Mopper extends Unit {
             RobotInfo robot = nearbyEnemyRobots[i];
             if (robot.getType().isTowerType()) continue;
             MapLocation loc = robot.getLocation();
-            MapLocation diff = loc.translate(locBeforeTurn.x, locBeforeTurn.y);
+            MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
             switch ((diff.x + 4) * 9 + (diff.y)) {
                 case 7: sweepScore[8] |= 4096; break; // (-3, -2)
                 case 8: sweepScore[1] |= 4096; sweepScore[8] |= 4096; break; // (-3, -1)
@@ -199,7 +200,7 @@ public class Mopper extends Unit {
         for (int i = nearbyMapInfos.length; --i >= 0;) {
             MapInfo tile = nearbyMapInfos[i];
             MapLocation loc = tile.getMapLocation();
-            MapLocation diff = loc.translate(locBeforeTurn.x, locBeforeTurn.y);
+            MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
             if (tile.getPaint().isAlly()) {
                 switch ((diff.x + 4) * 9 + (diff.y + 4)) {
                     case 21: numAllyTilesAdjacent |= 16777216; break; // (-2, -1)
@@ -288,7 +289,7 @@ public class Mopper extends Unit {
         }
     }
 
-    public static int enemiesSwept(Direction moveDir, Direction swing) {
+    public static int getMoveEnemiesSwept(Direction moveDir, Direction swing) {
         int idx;
         switch (swing) {
             case NORTH:
@@ -310,27 +311,28 @@ public class Mopper extends Unit {
         return (sweepScore[moveDir.getDirectionOrderNum()] >> idx) & 15;
     }
 
-    public static boolean hasEnemyTileWithRobot(Direction moveDir) {
+    public static boolean getMoveAdjEnemyTileWithEnemyRobot(Direction moveDir) {
         return (1 & (adjEnemyTileWithRobot >> (moveDir.getDirectionOrderNum()))) == 1;
     }
 
-    public static boolean hasEnemyTile(Direction moveDir) {
+    public static boolean getMoveAdjEnemyTile(Direction moveDir) {
         return (1 & (adjEnemyTile >> (moveDir.getDirectionOrderNum()))) == 1;
     }
 
     // only adjacent by an edge (no corners)
-    public static int countNumAllyTilesAdjacent(Direction attackDir) {
+    public static int getNumAllyTilesAdjacent(Direction attackDir) {
         return (numAllyTilesAdjacent >> (attackDir.getDirectionOrderNum() * 3)) & 0b111;
     }
 
-    public static boolean getAdjWithEnemyRobot(Direction moveDir) {
+    public static boolean getMoveAdjEnemyRobot(Direction moveDir) {
         return (1 & (adjWithEnemyRobot >> (moveDir.getDirectionOrderNum()))) == 1;
     }
+    
     // return true if just moved
-    public static boolean tryMoveAttackEnemyTileWithRobot() throws GameActionException {
+    public static boolean tryMoveAttackEnemyTileWithEnemyRobot() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
-            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && hasEnemyTileWithRobot(dir)) {
+            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getMoveAdjEnemyTileWithEnemyRobot(dir)) {
                 rc.move(dir);
                 for (int j = nearbyEnemyRobots.length; --j >= 0;) {
                     RobotInfo enemy = nearbyEnemyRobots[j];
@@ -355,7 +357,7 @@ public class Mopper extends Unit {
             if ((i == 0 || rc.canMove(moveDir)) && !dirInEnemyTowerRange(moveDir)) {
                 for (int j = 4; --j >= 0;) {
                     Direction swingDir = cardinalDirections[j];
-                    int cnt = enemiesSwept(moveDir, swingDir);
+                    int cnt = getMoveEnemiesSwept(moveDir, swingDir);
                     if (cnt > bestSweep) {
                         bestMoveDir = moveDir;
                         bestSweepDir = swingDir;
@@ -378,7 +380,7 @@ public class Mopper extends Unit {
     public static boolean tryMoveAttackEnemyRobotWithoutTile() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
-            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getAdjWithEnemyRobot(dir)) {
+            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getMoveAdjEnemyRobot(dir)) {
                 rc.move(dir);
                 tryAttackEnemyRobot();
                 return true;
@@ -390,7 +392,7 @@ public class Mopper extends Unit {
     public static boolean tryMoveAttackEnemyTile() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
-            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && hasEnemyTile(dir)) {
+            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getMoveAdjEnemyTile(dir)) {
                 rc.move(dir);
                 tryMopTile();
                 return true;
@@ -404,7 +406,7 @@ public class Mopper extends Unit {
             Direction dir = Direction.DIRECTION_ORDER[i];
             MapLocation attackLoc = rc.getLocation().add(dir);
             MapInfo tile = rc.senseMapInfo(attackLoc);
-            if (rc.canAttack(attackLoc) && tile.getPaint().isEnemy() &&  countNumAllyTilesAdjacent(dir) >= 2) {
+            if (rc.canAttack(attackLoc) && tile.getPaint().isEnemy() &&  getNumAllyTilesAdjacent(dir) >= 2) {
                 rc.attack(attackLoc);
                 return true;
             }
@@ -680,25 +682,37 @@ public class Mopper extends Unit {
 
     static class OptimalPathingStrategy extends MopperStrategy {
         public void act() throws GameActionException {
-            precomputeMovementInfo();
+            boolean acted = false;
+            if (rc.isMovementReady() && rc.isActionReady()) {
+                int bytecode = Clock.getBytecodeNum();
+                precomputeMovementInfo();
+                System.out.println("Precompute movement info bytecode: " + (Clock.getBytecodeNum() - bytecode));
 
-            // 1. attacking enemy on enemy tile 
-            tryMoveAttackEnemyTileWithRobot();
+                for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+                    Direction dir = Direction.DIRECTION_ORDER[i];
+                    Logger.log("" + getMoveAdjEnemyTile(dir));
+                }
 
-            // 2. sweep more than 2 ppl
-            tryMoveSweepCrowd();
+                // 1. attacking enemy on enemy tile 
+                acted |= tryMoveAttackEnemyTileWithEnemyRobot();
+    
+                // 2. sweep more than 2 ppl
+                if (!acted) acted |= tryMoveSweepCrowd();
+    
+                // 3. attack enemy not on tile
+                if (!acted) acted |= tryMoveAttackEnemyRobotWithoutTile();
+    
+                // 4. Attacking enemy tile, pick the one with most adjacent friendly paint (nested)
+                if (!acted) acted |= tryAttackMostNestedEnemyTile();
+            }
 
-            // 3. attack enemy not on tile
-            tryMoveAttackEnemyRobotWithoutTile();
-
-            // 4. Attacking enemy tile, pick the one with most adjacent friendly paint (nested)
-            tryAttackMostNestedEnemyTile();
-
-            tryMoveToFrontier();
-
-            tryMoveToSafeTile();
-
-            tryMoveLessSafeTile();
+            if (!acted) {
+                tryMoveToFrontier();
+    
+                tryMoveToSafeTile();
+    
+                tryMoveLessSafeTile();
+            }
 
             if (rc.getPaint() >= 50) {
                 tryTransferPaint(rc.getPaint()-30);
