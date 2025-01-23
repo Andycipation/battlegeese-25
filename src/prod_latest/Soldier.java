@@ -171,7 +171,7 @@ public class Soldier extends Unit {
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 var tile = nearbyMapInfos[i];
                 var loc = tile.getMapLocation();
-                if (loc.x % 4 == 2 && loc.y % 4 == 2 && isPatternOnMap(loc)) {
+                if (isInSrpCenterLocation(loc) && isPatternOnMap(loc)) {
                     if (((srpDone[loc.y] >> loc.x) & 1) == 0 && isSrpOk(loc)) {
                         state = StrategyState.BUILDING_SRP;
                         target = loc;
@@ -379,12 +379,6 @@ public class Soldier extends Unit {
                     rc.completeResourcePattern(loc);
                 }
             }
-
-            // turnsSinceInterestingActivity++;
-            // if (turnsSinceInterestingActivity > 30) {
-            //     switchStrategy(new CrusadeStrategy());
-            //     return;
-            // }
         }
 
         @Override

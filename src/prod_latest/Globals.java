@@ -292,7 +292,13 @@ public class Globals {
     }
 
     public static boolean getSrpUseSecondary(MapLocation loc) {
-        return resourcePattern[loc.x % 4][loc.y % 4];
+        int dx = loc.x;
+        int dy = loc.y;
+        if (rc.getTeam() == Team.B) {
+            dx = mapWidth - 1 - dx;
+            dy = mapHeight - 1 - dy;
+        }
+        return resourcePattern[dx % 4][dy % 4];
     }
 
     public static PaintType getSrpPaintColor(MapLocation loc) {
@@ -305,7 +311,13 @@ public class Globals {
     }
 
     public static boolean isInSrpCenterLocation(MapLocation loc) {
-        return loc.x % 4 == 2 && loc.y % 4 == 2;
+        int dx = loc.x;
+        int dy = loc.y;
+        if (rc.getTeam() == Team.B) {
+            dx = mapWidth - 1 - dx;
+            dy = mapHeight - 1 - dy;
+        }
+        return dx % 4 == 2 && dy % 4 == 2;
     }
 
     public static int chebyshevDist(MapLocation a, MapLocation b) {
