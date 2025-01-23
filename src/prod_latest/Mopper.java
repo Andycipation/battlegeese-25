@@ -101,9 +101,10 @@ public class Mopper extends Unit {
     public static boolean tryTransferPaint(int amount) throws GameActionException {
         for (int i = nearbyAllyRobots.length; --i >= 0;) {
             RobotInfo ally = nearbyAllyRobots[i];
-            if (ally.getType().isRobotType() && ally.getType() != UnitType.MOPPER) continue;
+            if (!ally.getType().isRobotType() || ally.getType() == UnitType.MOPPER) continue;
             if (rc.canTransferPaint(ally.getLocation(), amount) && ally.getPaintAmount() + amount <= ally.getType().paintCapacity) {
                 rc.transferPaint(ally.getLocation(), amount);
+                rc.setTimelineMarker("transferred paint", 0, 0, 255);
                 return true;
             }
         }
@@ -119,7 +120,7 @@ public class Mopper extends Unit {
 
         for (int i = nearbyEnemyRobots.length; --i >= 0;) {
             RobotInfo robot = nearbyEnemyRobots[i];
-            if (robot.getType().isTowerType()) continue;
+            if (robot.getType().isTowerType() || robot.getPaintAmount() == 0) continue;
             MapLocation loc = robot.getLocation();
             MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
             switch ((diff.x + 4) * 9 + (diff.y)) {
@@ -383,7 +384,6 @@ public class Mopper extends Unit {
             if (rc.canMopSwing(bestSweepDir)) {
                 rc.mopSwing(bestSweepDir);
             }
-            rc.setTimelineMarker("SWEEEEPT", 0, 255, 0);
             message += "tryMoveSweepCrowd";
             return true;
         } 
@@ -436,7 +436,7 @@ public class Mopper extends Unit {
                 }
             }
         }
-        if (bestAttackLoc != null) {
+        if (bestAttackLoc != null && rc.canAttack(bestAttackLoc)) {
             rc.attack(bestAttackLoc);
             message += "tryAttackMostNestedEnemyTile";
             message += "bruh " + mostAdjacentCnt + " " + bestAttackLoc;
@@ -452,11 +452,11 @@ public class Mopper extends Unit {
         }
         strategy.act();
         Logger.log(strategy.toString());
-        // if (rc.getPaint() <  && paintTowerLoc != null) {
-        //     Logger.log("refilling paint");
-        //     Logger.flush();
-        //     strategy = new RefillPaintStrategy(100);
-        // }
+        if (rc.getPaint() < 30  && paintTowerLoc != null && rc.getChips() < 2000) {
+            Logger.log("refilling paint");
+            Logger.flush();
+            strategy = new RefillPaintStrategy(100);
+        }
         // also wanna upgrade towers nearby if possible
         upgradeTowers();
     }
@@ -493,7 +493,6 @@ public class Mopper extends Unit {
         if(dir != null) {
             if(rc.canMopSwing(dir)) {
                 rc.mopSwing(dir);
-                // rc.setTimelineMarker("SWEEP", 0, 255, 0);
                 return true;
             }
         }
@@ -675,7 +674,7 @@ public class Mopper extends Unit {
         public void act() throws GameActionException {
             boolean acted = false;
             message = "";
-            if (rc.isMovementReady() && rc.isActionReady()) {
+            if (rc.isMovementReady()) {
                 int bytecode = Clock.getBytecodeNum();
                 precomputeMovementInfo();
                 // System.out.println("Precomp: " + (Clock.getBytecodeNum() - bytecode));

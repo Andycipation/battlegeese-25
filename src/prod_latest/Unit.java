@@ -219,8 +219,9 @@ public abstract class Unit extends Robot {
         shuffleArray(dirs);
         Direction bestDir = null;
         int minPenalty = 1000;
+        int offset = rng.nextInt(8);
         for (int i = dirs.length; --i >= 0;) {
-            Direction dir = dirs[i];
+            Direction dir = dirs[(i + offset)%8];
             MapLocation nxtLoc = rc.getLocation().add(dir);
             if (!withinBounds(nxtLoc)) continue;
             MapInfo tile = rc.senseMapInfo(nxtLoc);
