@@ -17,8 +17,8 @@ public class Mopper extends Unit {
         if (!acted) strategy.act();
     }
 
-    public static void yieldStrategy() {
-        strategy = new OptimalPathingStrategy();
+    public static void yieldStrategy() throws GameActionException {
+        strategy = new ExploreStrategy();
         // strategy = new ExploreStrategy(8, 6);
     }
 
@@ -448,11 +448,11 @@ public class Mopper extends Unit {
         }
         strategy.act();
         Logger.log(strategy.toString());
-        if (rc.getPaint() < 10 && paintTowerLoc != null) {
-            Logger.log("refilling paint");
-            Logger.flush();
-            strategy = new RefillPaintStrategy(100);
-        }
+        // if (rc.getPaint() <  && paintTowerLoc != null) {
+        //     Logger.log("refilling paint");
+        //     Logger.flush();
+        //     strategy = new RefillPaintStrategy(100);
+        // }
         // also wanna upgrade towers nearby if possible
         upgradeTowers();
     }
@@ -500,81 +500,67 @@ public class Mopper extends Unit {
     abstract static class MopperStrategy {
         abstract public void act() throws GameActionException;
     }
+
+    static class ExploreStrategy extends MopperStrategy {
     
-    static class MopRuinStrategy extends MopperStrategy {
+        public static MapLocation target;
+        public static int turnsNotMoved;
+        public static int switchStrategyCooldown;
+    
+        public ExploreStrategy() throws GameActionException {
+            turnsNotMoved = 0;
 
-        public static MapLocation ruinLoc;
-        public static int turnsWithNothingToMop;
-
-        MopRuinStrategy(MapLocation _ruinloc) {
-            ruinLoc = _ruinloc;
-            turnsWithNothingToMop = 0;
-        }
-
-        // Assumes robot is spinning around ruin and returns true if there is something adjacent to mop
-        public boolean mopNearby() throws GameActionException {
-            boolean ret = false;
-
-            MapInfo[] actionableMapInfos = rc.senseNearbyMapInfos(rc.getLocation(), actionRadiusSquared);
-            for(int i = actionableMapInfos.length; --i >= 0;) {
-                MapInfo tile = actionableMapInfos[i];
-                MapLocation loc = tile.getMapLocation();
-                if(withinPattern(ruinLoc, loc) && tile.getPaint().isEnemy()) {
-                    ret = true;
-                    if(rc.canAttack(loc)) {
-                        rc.attack(loc);
-                        return ret;
-                    }
-                }
+            MapLocation possibleTarget = null;
+            if (informedEnemyPaintLoc != null && rc.canSenseLocation(informedEnemyPaintLoc) && rc.senseMapInfo(informedEnemyPaintLoc).getPaint().isEnemy()) {
+                possibleTarget = informedEnemyPaintLoc;
             }
-
-            return ret;
-        }
-
-        @Override
-        public void act() throws GameActionException {
-            if (ruinLoc == null || !rc.canSenseLocation(ruinLoc)) {
-                yieldStrategy();
-                return;
-            }
-
-            // if tower is already built, we ignore
-            if (rc.getLocation().isWithinDistanceSquared(ruinLoc, visionRadiusSquared)) {
-                RobotInfo robotInfo = rc.senseRobotAtLocation(ruinLoc);
-                if (robotInfo != null) {
-                    yieldStrategy();
-                    return ;
-                }
-            }
-            
-
-            if(!locBeforeTurn.isAdjacentTo(ruinLoc)) {
-                BugNav.moveToward(ruinLoc);
-                mopNearby();
+            if (possibleTarget != null) {
+                target = project(locBeforeTurn, possibleTarget);
             }
             else {
-                // walk around tower every turn
-                Direction dir = locBeforeTurn.directionTo(ruinLoc).rotateLeft();
-                if(rc.canMove(dir)) {
-                    rc.move(dir);
-                }
-
-                if(!mopNearby()) {
-                    turnsWithNothingToMop++;
+                target = new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight));
+            }
+        }
+    
+        @Override
+        public void act() throws GameActionException {
+            for (int i = nearbyMapInfos.length; --i >= 0;) {
+                MapInfo tile = nearbyMapInfos[i];
+                if (tile.getPaint().isEnemy()) {
+                    switchStrategy(new OptimalPathingStrategy(), false);
+                    return;
                 }
             }
-
-            if(turnsWithNothingToMop >= 4) {
-                yieldStrategy();
+            for (int i = nearbyEnemyRobots.length; --i >= 0;) {
+                RobotInfo robot = nearbyEnemyRobots[i];
+                if (robot.getType().isRobotType()) {
+                    switchStrategy(new OptimalPathingStrategy(), false);
+                    return;
+                }
+            }
+            if (chebyshevDist(locBeforeTurn, target) <= 2) { // my target is likely outdated, reset!
+                switchStrategy(new ExploreStrategy(), false);
                 return;
             }
-        }
 
+            BugNav.moveToward(target);
+            rc.setIndicatorLine(rc.getLocation(), target, 0, 255, 0);
+            if (rc.getLocation() == locBeforeTurn) {
+                turnsNotMoved++;
+                if (turnsNotMoved >= 3) {
+                    yieldStrategy();
+                    return;
+                }
+            }
+
+            else turnsNotMoved = 0;
+        }
+    
         @Override
         public String toString() {
-            return "MopRuin " + ruinLoc + " " + turnsWithNothingToMop;
+            return "Explore " + " " + target;
         }
-     }
+    }
 
     // badarded -- refill paint strategy, copied from solder
     // TODO: unify this
@@ -686,32 +672,36 @@ public class Mopper extends Unit {
             if (rc.isMovementReady() && rc.isActionReady()) {
                 int bytecode = Clock.getBytecodeNum();
                 precomputeMovementInfo();
-                System.out.println("Precompute movement info bytecode: " + (Clock.getBytecodeNum() - bytecode));
-
-                for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
-                    Direction dir = Direction.DIRECTION_ORDER[i];
-                    Logger.log("" + getMoveAdjEnemyTile(dir));
-                }
-
+                // System.out.println("Precomp: " + (Clock.getBytecodeNum() - bytecode));
+                
+                // for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+                    //     Direction dir = Direction.DIRECTION_ORDER[i];
+                    //     Logger.log("" + getMoveAdjEnemyTile(dir));
+                // }
+                
                 // 1. attacking enemy on enemy tile 
+                bytecode = Clock.getBytecodeNum();
                 acted |= tryMoveAttackEnemyTileWithEnemyRobot();
-    
+                
                 // 2. sweep more than 2 ppl
                 if (!acted) acted |= tryMoveSweepCrowd();
     
                 // 3. attack enemy not on tile
                 if (!acted) acted |= tryMoveAttackEnemyRobotWithoutTile();
-    
+                
                 // 4. Attacking enemy tile, pick the one with most adjacent friendly paint (nested)
                 if (!acted) acted |= tryAttackMostNestedEnemyTile();
+                // System.out.println("Acting: " + (Clock.getBytecodeNum() - bytecode));
             }
 
             if (!acted) {
-                tryMoveToFrontier();
+                int bytecode = Clock.getBytecodeNum();
+                if (!acted) acted |= tryMoveToFrontier();
     
-                tryMoveToSafeTile();
+                if (!acted) acted |= tryMoveToSafeTile();
     
-                tryMoveLessSafeTile();
+                if (!acted) acted |= tryMoveLessSafeTile();
+                // System.out.println("Moving: " + (Clock.getBytecodeNum() - bytecode));
             }
 
             if (rc.getPaint() >= 50) {
