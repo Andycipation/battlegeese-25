@@ -339,11 +339,11 @@ public class Mopper extends Unit {
                     RobotInfo enemy = nearbyEnemyRobots[j];
                     if (enemy.getType().isRobotType() && rc.canAttack(enemy.getLocation()) && rc.senseMapInfo(enemy.getLocation()).getPaint().isEnemy()) {
                         rc.attack(enemy.getLocation());
-                        message += "MoveAttackEnemyTileWithEnemyRobot";
+                        message += "MoveAttackEnemyTileWithEnemyRobot" + enemy.getLocation();
                         return true;
                     }
                 }
-                message += "MoveAttackEnemyTileWithEnemyRobot";
+                message += "NO ATTACK DONE WAAAAAH";
                 return true;
             }
         }
@@ -362,6 +362,7 @@ public class Mopper extends Unit {
                     Direction swingDir = cardinalDirections[j];
                     int cnt = getMoveEnemiesSwept(moveDir, swingDir);
                     if (cnt > bestSweep) {
+                        message += "gay: " + cnt;
                         bestMoveDir = moveDir;
                         bestSweepDir = swingDir;
                         bestSweep = cnt;
@@ -369,12 +370,12 @@ public class Mopper extends Unit {
                 } 
             }
         }
-        if (bestMoveDir != null && bestSweep >= 2) {
+        if (bestMoveDir != null && bestSweep >= 1) {
             mdir(bestMoveDir);
             if (rc.canMopSwing(bestSweepDir)) {
                 rc.mopSwing(bestSweepDir);
             }
-            // rc.setTimelineMarker("SWEEEEPT", 0, 255, 0);
+            rc.setTimelineMarker("SWEEEEPT", 0, 255, 0);
             message += "tryMoveSweepCrowd";
             return true;
         } 
