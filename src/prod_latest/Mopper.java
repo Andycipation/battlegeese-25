@@ -123,51 +123,51 @@ public class Mopper extends Unit {
             MapLocation loc = robot.getLocation();
             MapLocation diff = loc.translate(-locBeforeTurn.x, -locBeforeTurn.y);
             switch ((diff.x + 4) * 9 + (diff.y)) {
-                case 7: sweepScore[8] |= 4096; break; // (-3, -2)
-                case 8: sweepScore[1] |= 4096; sweepScore[8] |= 4096; break; // (-3, -1)
-                case 9: sweepScore[1] |= 4096; sweepScore[2] |= 4096; sweepScore[8] |= 4096; break; // (-3, 0)
-                case 10: sweepScore[1] |= 4096; sweepScore[2] |= 4096; break; // (-3, 1)
-                case 11: sweepScore[2] |= 4096; break; // (-3, 2)
-                case 15: sweepScore[8] |= 256; break; // (-2, -3)
-                case 16: sweepScore[1] |= 256; sweepScore[7] |= 4096; sweepScore[8] |= 4352; break; // (-2, -2)
-                case 17: sweepScore[0] |= 4096; sweepScore[1] |= 4352; sweepScore[2] |= 256; sweepScore[7] |= 4096; sweepScore[8] |= 4096; break; // (-2, -1)
-                case 18: sweepScore[0] |= 4096; sweepScore[1] |= 4096; sweepScore[2] |= 4352; sweepScore[3] |= 4096; sweepScore[7] |= 4096; sweepScore[8] |= 4097; break; // (-2, 0)
-                case 19: sweepScore[0] |= 4096; sweepScore[1] |= 4097; sweepScore[2] |= 4096; sweepScore[3] |= 4096; sweepScore[8] |= 1; break; // (-2, 1)
-                case 20: sweepScore[1] |= 1; sweepScore[2] |= 4097; sweepScore[3] |= 4096; break; // (-2, 2)
-                case 21: sweepScore[2] |= 1; break; // (-2, 3)
-                case 24: sweepScore[7] |= 256; sweepScore[8] |= 256; break; // (-1, -3)
-                case 25: sweepScore[0] |= 256; sweepScore[1] |= 256; sweepScore[6] |= 4096; sweepScore[7] |= 4352; sweepScore[8] |= 256; break; // (-1, -2)
-                case 26: sweepScore[0] |= 4352; sweepScore[1] |= 256; sweepScore[2] |= 256; sweepScore[3] |= 256; sweepScore[5] |= 4096; sweepScore[6] |= 4096; sweepScore[7] |= 4096; break; // (-1, -1)
-                case 27: sweepScore[0] |= 4096; sweepScore[2] |= 256; sweepScore[3] |= 4352; sweepScore[4] |= 4096; sweepScore[5] |= 4096; sweepScore[6] |= 4096; sweepScore[7] |= 4097; sweepScore[8] |= 1; break; // (-1, 0)
-                case 28: sweepScore[0] |= 4097; sweepScore[1] |= 1; sweepScore[3] |= 4096; sweepScore[4] |= 4096; sweepScore[5] |= 4096; sweepScore[7] |= 1; sweepScore[8] |= 1; break; // (-1, 1)
-                case 29: sweepScore[0] |= 1; sweepScore[1] |= 1; sweepScore[2] |= 1; sweepScore[3] |= 4097; sweepScore[4] |= 4096; break; // (-1, 2)
-                case 30: sweepScore[2] |= 1; sweepScore[3] |= 1; break; // (-1, 3)
-                case 33: sweepScore[6] |= 256; sweepScore[7] |= 256; sweepScore[8] |= 256; break; // (0, -3)
-                case 34: sweepScore[0] |= 256; sweepScore[1] |= 256; sweepScore[5] |= 256; sweepScore[6] |= 4352; sweepScore[7] |= 256; sweepScore[8] |= 272; break; // (0, -2)
-                case 35: sweepScore[0] |= 256; sweepScore[1] |= 272; sweepScore[2] |= 256; sweepScore[3] |= 256; sweepScore[4] |= 256; sweepScore[5] |= 4352; sweepScore[6] |= 4096; sweepScore[8] |= 16; break; // (0, -1)
-                case 36: sweepScore[1] |= 16; sweepScore[2] |= 272; sweepScore[3] |= 256; sweepScore[4] |= 4352; sweepScore[5] |= 4096; sweepScore[6] |= 4097; sweepScore[7] |= 1; sweepScore[8] |= 17; break; // (0, 0)
-                case 37: sweepScore[0] |= 1; sweepScore[1] |= 17; sweepScore[2] |= 16; sweepScore[4] |= 4096; sweepScore[5] |= 4097; sweepScore[6] |= 1; sweepScore[7] |= 1; sweepScore[8] |= 1; break; // (0, 1)
-                case 38: sweepScore[0] |= 1; sweepScore[1] |= 1; sweepScore[2] |= 17; sweepScore[3] |= 1; sweepScore[4] |= 4097; sweepScore[5] |= 1; break; // (0, 2)
-                case 39: sweepScore[2] |= 1; sweepScore[3] |= 1; sweepScore[4] |= 1; break; // (0, 3)
-                case 42: sweepScore[6] |= 256; sweepScore[7] |= 256; break; // (1, -3)
-                case 43: sweepScore[0] |= 256; sweepScore[5] |= 256; sweepScore[6] |= 256; sweepScore[7] |= 272; sweepScore[8] |= 16; break; // (1, -2)
-                case 44: sweepScore[0] |= 272; sweepScore[1] |= 16; sweepScore[3] |= 256; sweepScore[4] |= 256; sweepScore[5] |= 256; sweepScore[7] |= 16; sweepScore[8] |= 16; break; // (1, -1)
-                case 45: sweepScore[0] |= 16; sweepScore[1] |= 16; sweepScore[2] |= 16; sweepScore[3] |= 272; sweepScore[4] |= 256; sweepScore[6] |= 1; sweepScore[7] |= 17; sweepScore[8] |= 16; break; // (1, 0)
-                case 46: sweepScore[0] |= 17; sweepScore[1] |= 16; sweepScore[2] |= 16; sweepScore[3] |= 16; sweepScore[5] |= 1; sweepScore[6] |= 1; sweepScore[7] |= 1; break; // (1, 1)
-                case 47: sweepScore[0] |= 1; sweepScore[2] |= 16; sweepScore[3] |= 17; sweepScore[4] |= 1; sweepScore[5] |= 1; break; // (1, 2)
-                case 48: sweepScore[3] |= 1; sweepScore[4] |= 1; break; // (1, 3)
-                case 51: sweepScore[6] |= 256; break; // (2, -3)
-                case 52: sweepScore[5] |= 256; sweepScore[6] |= 272; sweepScore[7] |= 16; break; // (2, -2)
-                case 53: sweepScore[0] |= 16; sweepScore[4] |= 256; sweepScore[5] |= 272; sweepScore[6] |= 16; sweepScore[7] |= 16; break; // (2, -1)
-                case 54: sweepScore[0] |= 16; sweepScore[3] |= 16; sweepScore[4] |= 272; sweepScore[5] |= 16; sweepScore[6] |= 17; sweepScore[7] |= 16; break; // (2, 0)
-                case 55: sweepScore[0] |= 16; sweepScore[3] |= 16; sweepScore[4] |= 16; sweepScore[5] |= 17; sweepScore[6] |= 1; break; // (2, 1)
-                case 56: sweepScore[3] |= 16; sweepScore[4] |= 17; sweepScore[5] |= 1; break; // (2, 2)
-                case 57: sweepScore[4] |= 1; break; // (2, 3)
-                case 61: sweepScore[6] |= 16; break; // (3, -2)
-                case 62: sweepScore[5] |= 16; sweepScore[6] |= 16; break; // (3, -1)
-                case 63: sweepScore[4] |= 16; sweepScore[5] |= 16; sweepScore[6] |= 16; break; // (3, 0)
-                case 64: sweepScore[4] |= 16; sweepScore[5] |= 16; break; // (3, 1)
-                case 65: sweepScore[4] |= 16; break; // (3, 2)
+                case 7: sweepScore[8] += 4096; break; // (-3, -2)
+                case 8: sweepScore[1] += 4096; sweepScore[8] += 4096; break; // (-3, -1)
+                case 9: sweepScore[1] += 4096; sweepScore[2] += 4096; sweepScore[8] += 4096; break; // (-3, 0)
+                case 10: sweepScore[1] += 4096; sweepScore[2] += 4096; break; // (-3, 1)
+                case 11: sweepScore[2] += 4096; break; // (-3, 2)
+                case 15: sweepScore[8] += 256; break; // (-2, -3)
+                case 16: sweepScore[1] += 256; sweepScore[7] += 4096; sweepScore[8] += 4352; break; // (-2, -2)
+                case 17: sweepScore[0] += 4096; sweepScore[1] += 4352; sweepScore[2] += 256; sweepScore[7] += 4096; sweepScore[8] += 4096; break; // (-2, -1)
+                case 18: sweepScore[0] += 4096; sweepScore[1] += 4096; sweepScore[2] += 4352; sweepScore[3] += 4096; sweepScore[7] += 4096; sweepScore[8] += 4097; break; // (-2, 0)
+                case 19: sweepScore[0] += 4096; sweepScore[1] += 4097; sweepScore[2] += 4096; sweepScore[3] += 4096; sweepScore[8] += 1; break; // (-2, 1)
+                case 20: sweepScore[1] += 1; sweepScore[2] += 4097; sweepScore[3] += 4096; break; // (-2, 2)
+                case 21: sweepScore[2] += 1; break; // (-2, 3)
+                case 24: sweepScore[7] += 256; sweepScore[8] += 256; break; // (-1, -3)
+                case 25: sweepScore[0] += 256; sweepScore[1] += 256; sweepScore[6] += 4096; sweepScore[7] += 4352; sweepScore[8] += 256; break; // (-1, -2)
+                case 26: sweepScore[0] += 4352; sweepScore[1] += 256; sweepScore[2] += 256; sweepScore[3] += 256; sweepScore[5] += 4096; sweepScore[6] += 4096; sweepScore[7] += 4096; break; // (-1, -1)
+                case 27: sweepScore[0] += 4096; sweepScore[2] += 256; sweepScore[3] += 4352; sweepScore[4] += 4096; sweepScore[5] += 4096; sweepScore[6] += 4096; sweepScore[7] += 4097; sweepScore[8] += 1; break; // (-1, 0)
+                case 28: sweepScore[0] += 4097; sweepScore[1] += 1; sweepScore[3] += 4096; sweepScore[4] += 4096; sweepScore[5] += 4096; sweepScore[7] += 1; sweepScore[8] += 1; break; // (-1, 1)
+                case 29: sweepScore[0] += 1; sweepScore[1] += 1; sweepScore[2] += 1; sweepScore[3] += 4097; sweepScore[4] += 4096; break; // (-1, 2)
+                case 30: sweepScore[2] += 1; sweepScore[3] += 1; break; // (-1, 3)
+                case 33: sweepScore[6] += 256; sweepScore[7] += 256; sweepScore[8] += 256; break; // (0, -3)
+                case 34: sweepScore[0] += 256; sweepScore[1] += 256; sweepScore[5] += 256; sweepScore[6] += 4352; sweepScore[7] += 256; sweepScore[8] += 272; break; // (0, -2)
+                case 35: sweepScore[0] += 256; sweepScore[1] += 272; sweepScore[2] += 256; sweepScore[3] += 256; sweepScore[4] += 256; sweepScore[5] += 4352; sweepScore[6] += 4096; sweepScore[8] += 16; break; // (0, -1)
+                case 36: sweepScore[1] += 16; sweepScore[2] += 272; sweepScore[3] += 256; sweepScore[4] += 4352; sweepScore[5] += 4096; sweepScore[6] += 4097; sweepScore[7] += 1; sweepScore[8] += 17; break; // (0, 0)
+                case 37: sweepScore[0] += 1; sweepScore[1] += 17; sweepScore[2] += 16; sweepScore[4] += 4096; sweepScore[5] += 4097; sweepScore[6] += 1; sweepScore[7] += 1; sweepScore[8] += 1; break; // (0, 1)
+                case 38: sweepScore[0] += 1; sweepScore[1] += 1; sweepScore[2] += 17; sweepScore[3] += 1; sweepScore[4] += 4097; sweepScore[5] += 1; break; // (0, 2)
+                case 39: sweepScore[2] += 1; sweepScore[3] += 1; sweepScore[4] += 1; break; // (0, 3)
+                case 42: sweepScore[6] += 256; sweepScore[7] += 256; break; // (1, -3)
+                case 43: sweepScore[0] += 256; sweepScore[5] += 256; sweepScore[6] += 256; sweepScore[7] += 272; sweepScore[8] += 16; break; // (1, -2)
+                case 44: sweepScore[0] += 272; sweepScore[1] += 16; sweepScore[3] += 256; sweepScore[4] += 256; sweepScore[5] += 256; sweepScore[7] += 16; sweepScore[8] += 16; break; // (1, -1)
+                case 45: sweepScore[0] += 16; sweepScore[1] += 16; sweepScore[2] += 16; sweepScore[3] += 272; sweepScore[4] += 256; sweepScore[6] += 1; sweepScore[7] += 17; sweepScore[8] += 16; break; // (1, 0)
+                case 46: sweepScore[0] += 17; sweepScore[1] += 16; sweepScore[2] += 16; sweepScore[3] += 16; sweepScore[5] += 1; sweepScore[6] += 1; sweepScore[7] += 1; break; // (1, 1)
+                case 47: sweepScore[0] += 1; sweepScore[2] += 16; sweepScore[3] += 17; sweepScore[4] += 1; sweepScore[5] += 1; break; // (1, 2)
+                case 48: sweepScore[3] += 1; sweepScore[4] += 1; break; // (1, 3)
+                case 51: sweepScore[6] += 256; break; // (2, -3)
+                case 52: sweepScore[5] += 256; sweepScore[6] += 272; sweepScore[7] += 16; break; // (2, -2)
+                case 53: sweepScore[0] += 16; sweepScore[4] += 256; sweepScore[5] += 272; sweepScore[6] += 16; sweepScore[7] += 16; break; // (2, -1)
+                case 54: sweepScore[0] += 16; sweepScore[3] += 16; sweepScore[4] += 272; sweepScore[5] += 16; sweepScore[6] += 17; sweepScore[7] += 16; break; // (2, 0)
+                case 55: sweepScore[0] += 16; sweepScore[3] += 16; sweepScore[4] += 16; sweepScore[5] += 17; sweepScore[6] += 1; break; // (2, 1)
+                case 56: sweepScore[3] += 16; sweepScore[4] += 17; sweepScore[5] += 1; break; // (2, 2)
+                case 57: sweepScore[4] += 1; break; // (2, 3)
+                case 61: sweepScore[6] += 16; break; // (3, -2)
+                case 62: sweepScore[5] += 16; sweepScore[6] += 16; break; // (3, -1)
+                case 63: sweepScore[4] += 16; sweepScore[5] += 16; sweepScore[6] += 16; break; // (3, 0)
+                case 64: sweepScore[4] += 16; sweepScore[5] += 16; break; // (3, 1)
+                case 65: sweepScore[4] += 16; break; // (3, 2)
             }
             switch ((diff.x + 4) * 9 + (diff.y + 4)) {
                 case 20: adjWithEnemyRobot |= 256; break; // (-2, -2)
@@ -369,6 +369,7 @@ public class Mopper extends Unit {
                 } 
             }
         }
+        message += "sweep gets " + bestSweep;
         if (bestMoveDir != null && bestSweep >= 2) {
             mdir(bestMoveDir);
             if (rc.canMopSwing(bestSweepDir)) {
@@ -688,12 +689,12 @@ public class Mopper extends Unit {
                     //     Logger.log("" + getMoveAdjEnemyTile(dir));
                 // }
                 
-                // 1. attacking enemy on enemy tile 
                 bytecode = Clock.getBytecodeNum();
-                acted |= tryMoveAttackEnemyTileWithEnemyRobot();
-                
-                // 2. sweep more than 2 ppl
+                // 1. sweep >= 2 ppl
                 if (!acted) acted |= tryMoveSweepCrowd();
+                
+                // 2. attacking enemy on enemy tile 
+                if (!acted) acted |= tryMoveAttackEnemyTileWithEnemyRobot();
     
                 // 3. attack enemy not on tile
                 if (!acted) acted |= tryMoveAttackEnemyRobotWithoutTile();
