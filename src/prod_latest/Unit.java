@@ -66,8 +66,10 @@ public abstract class Unit extends Robot {
         //     memory[loc.x][loc.y] = tile.isPassable() ? MapLocationType.PASSABLE : (tile.isWall() ? MapLocationType.WALL : MapLocationType.RUIN);
         // }
 
+        int[] pi = ranPerm(nearbyMapInfos.length);
+
         for (int i = nearbyMapInfos.length; --i >= 0;) {
-            MapInfo tile = nearbyMapInfos[i];
+            MapInfo tile = nearbyMapInfos[pi[i]];
             if (!tile.isPassable()) continue;
             MapLocation loc = tile.getMapLocation();
             if (tile.getPaint().isEnemy()) {

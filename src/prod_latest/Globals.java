@@ -344,4 +344,16 @@ public class Globals {
         if (dir.getDirectionOrderNum() == 0) return;
         rc.move(dir);
     }
+
+    public static int[] ranPerm(int n) {
+        int[] pi = new int[n];
+        for (int i = n; --i >= 1;) {
+            pi[i] = i;
+            int j = rng.nextInt(i+1);
+            pi[j] ^= pi[i];
+            pi[i] ^= pi[j];
+            pi[j] ^= pi[i];
+        }
+        return pi;
+    }
 }
