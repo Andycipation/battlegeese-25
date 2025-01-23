@@ -12,9 +12,17 @@ public class Soldier extends Unit {
 
     public static MapLocation prevLoc = null;
 
+    public static void switchStrategy(SoldierStrategy newStrategy) {
+        strategy = newStrategy;
+    }
+
     @Override
     void play() throws GameActionException {
         if (strategy == null) {
+            // if (roundNum >= 30 && rng.nextInt(2) == 1) {
+            //     strategy = new CrusadeStrategy();
+            // }
+            // else strategy = new EarlyGameStrategy();
             strategy = new EarlyGameStrategy();
         }
         Logger.log(strategy.toString());
@@ -50,6 +58,7 @@ public class Soldier extends Unit {
         static long[] srpBlocked;
         static long[] ruinBlocked;
         static long[] srpDone;
+        static int turnsSinceInterestingActivity;
 
         EarlyGameStrategy() {
             srpBlocked = new long[mapHeight];
@@ -59,8 +68,8 @@ public class Soldier extends Unit {
 
         static UnitType getTowerToBuild() {
             // The first two are in case we drop below 2 towers
-            final int[] ORDER = {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
-            if (numTowers >= ORDER.length) {
+            final int[] ORDER = {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2};
+            if (numTowers >= ORDER.length || rc.getChips() >= 40000) {
                 return UnitType.LEVEL_ONE_PAINT_TOWER;
             }
             return switch (ORDER[numTowers]) {
@@ -242,6 +251,7 @@ public class Soldier extends Unit {
             // System.out.println("Bytecodes used to get project: " + (endBytecodes - startBytecodes));
 
             if (state == StrategyState.BUILDING_RUIN) {
+                turnsSinceInterestingActivity = 0;
                 // TODO: get closest tower to being built based on the pattern and keep building it
                 var ruinLoc = target;
                 if (rc.canSenseRobotAtLocation(ruinLoc)) {
@@ -275,6 +285,7 @@ public class Soldier extends Unit {
             }
 
             if (state == StrategyState.BUILDING_SRP) {
+                turnsSinceInterestingActivity = 0;
                 var srpCenter = target;
                 if (!isSrpOk(srpCenter)) {
                     state = null;
@@ -320,6 +331,7 @@ public class Soldier extends Unit {
             }
 
             if (state == StrategyState.KITING) {
+                turnsSinceInterestingActivity = 0;
                 if (!rc.canSenseRobotAtLocation(target)) {
                     state = null;
                     return;
@@ -367,6 +379,12 @@ public class Soldier extends Unit {
                     rc.completeResourcePattern(loc);
                 }
             }
+
+            // turnsSinceInterestingActivity++;
+            // if (turnsSinceInterestingActivity > 30) {
+            //     switchStrategy(new CrusadeStrategy());
+            //     return;
+            // }
         }
 
         @Override
@@ -375,4 +393,98 @@ public class Soldier extends Unit {
         }
     }
 
+    static class CrusadeStrategy extends SoldierStrategy {
+        enum StrategyState {
+            KITING,
+            TRAVELLING,
+        }
+        
+        public static StrategyState state = null;
+        public static MapLocation target = null;
+        public static MapLocation[] checkpoints;
+        public static int checkpointPtr = 0;
+
+        CrusadeStrategy() {
+            if (rng.nextInt(2) == 0) {
+                checkpoints = new MapLocation[3];
+                checkpoints[0] = reflectXY(spawnLocation);
+                checkpoints[1] = reflectX(spawnLocation);
+                checkpoints[2] = reflectY(spawnLocation);
+            }
+            else {
+                checkpoints = new MapLocation[4];
+                checkpoints[0] = new MapLocation(0, 0);
+                checkpoints[1] = new MapLocation(mapWidth-1, 0);
+                checkpoints[2] = new MapLocation(mapWidth-1, mapHeight-1);
+                checkpoints[3] = new MapLocation(0, mapHeight-1);
+                checkpointPtr = rng.nextInt(4);
+            }
+            state = StrategyState.TRAVELLING;
+        }
+
+
+        @Override
+        public void act() throws GameActionException{
+            if (state == null) {
+                state = StrategyState.TRAVELLING;
+            }
+
+            if (state == StrategyState.TRAVELLING) {
+                for (int i = nearbyEnemyRobots.length; --i >= 0;) {
+                    var robotInfo = nearbyEnemyRobots[i];
+                    if (robotInfo.type.isTowerType()) {
+                        state = StrategyState.KITING;
+                        target = robotInfo.location;
+                        act();
+                        return;
+                    }
+                }
+
+                if (rc.getLocation().isAdjacentTo(checkpoints[checkpointPtr])) {
+                    checkpointPtr = (checkpointPtr + 1) % checkpoints.length;
+                }
+                MapLocation checkpoint = checkpoints[checkpointPtr];
+                BugNav.moveToward(checkpoint);
+                rc.setIndicatorLine(rc.getLocation(), checkpoint, 0, 255, 0);
+                if (roundNum % 5 == 0) { // attack infrequently to conserve paint :)
+                    MapInfo[] attackableTiles = rc.senseNearbyMapInfos(rc.getLocation(), actionRadiusSquared);
+                    for (int i = attackableTiles.length; --i >= 0;) {
+                        MapInfo tile = attackableTiles[i];
+                        MapLocation loc = tile.getMapLocation();
+                        if (tile.getPaint() == PaintType.EMPTY && tryPaint(loc, getSrpPaintColor(loc))) {
+                            break;
+                        }
+                    }
+                }
+                return;
+            }
+
+            if (state == StrategyState.KITING) {
+                if (!rc.canSenseRobotAtLocation(target)) {
+                    state = null;
+                    act();
+                    return;
+                }
+                RobotInfo robotInfo = rc.senseRobotAtLocation(target);
+                if (robotInfo.team.equals(myTeam)) {
+                    state = null;
+                    act();
+                    return;
+                }
+                if (tryAttack(target)) {
+                    var curLoc = rc.getLocation();
+                    var reflected = new MapLocation(2 * curLoc.x - target.x, 2 * curLoc.y - target.y);
+                    BugNav.moveToward(reflected);
+                } else {
+                    BugNav.moveToward(target);
+                    tryAttack(target);
+                }
+                return;
+            }
+        }
+
+        public String toString() {
+            return "CrusadeStrategy " + state + " " + target;
+        }
+    }
 }
