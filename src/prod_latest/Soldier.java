@@ -435,13 +435,13 @@ public class Soldier extends Unit {
                 if (rc.canSenseRobotAtLocation(ruinLoc)) {
                     // Tower has been finished
                     state = null;
-                    act();
+                    // act();
                     return;
                 }
                 if (!patternAppearsClear(ruinLoc, false)) {
                     // Enemy painted in the pattern
                     state = null;
-                    act();
+                    // act();
                     return;
                 }
 
@@ -468,7 +468,7 @@ public class Soldier extends Unit {
                 System.out.println("used " + Clock.getBytecodeNum());
                 if (!isSrpOkManual(srpCenter)) {
                     state = null;
-                    act();
+                    // act();
                     return;
                 }
 
@@ -513,7 +513,7 @@ public class Soldier extends Unit {
                 turnsSinceInterestingActivity = 0;
                 if (!rc.canSenseRobotAtLocation(target)) {
                     state = null;
-                    act();
+                    // act();
                     return;
                 }
                 RobotInfo robotInfo = rc.senseRobotAtLocation(target);
