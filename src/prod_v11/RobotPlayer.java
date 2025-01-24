@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v11;
 
 import battlecode.common.*;
 
@@ -56,7 +56,7 @@ public class RobotPlayer extends Globals {
         double bytecodePercentage = (double) usedBytecodes / (double) bytecodeLimit * 100.0;
 
         if (startRound != endRound) {
-            System.out.println(rc.getLocation() + " " + rc.getType() + " Bytecode overflow: " + usedBytecodes + " (" + bytecodePercentage + "%)" + " Round: " + startRound + " -> " + endRound);
+            System.out.println(rc.getLocation() + " " + rc.getType() + " Bytecode overflow: " + usedBytecodes + " (" + bytecodePercentage + "%)");
         } else if (bytecodePercentage > 90) {
             System.out.println(rc.getLocation() + " " + rc.getType() + " High bytecode usage: " + usedBytecodes + " (" + bytecodePercentage + "%)");
         }
