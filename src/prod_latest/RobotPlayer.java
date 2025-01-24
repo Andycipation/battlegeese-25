@@ -6,13 +6,11 @@ public class RobotPlayer extends Globals {
 
     static Robot robot;
     static int bytecodeLimit;
-    static int spawnRound;
 
     public static void run(RobotController rc) throws GameActionException {
         
         Globals.init(rc);
         bytecodeLimit = unitType.isTowerType() ? GameConstants.TOWER_BYTECODE_LIMIT : GameConstants.ROBOT_BYTECODE_LIMIT;
-        spawnRound = rc.getRoundNum();
 
         robot = switch (rc.getType()) {
             case SOLDIER -> new Soldier();

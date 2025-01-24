@@ -10,12 +10,12 @@ public abstract class Robot extends Globals {
     public static MapLocation[] nearbyRuins;
     public static MapLocation locBeforeTurn;
     public static int numTowers;
+    public static int spawnRound = -1;
     public static int roundNum;
     static Message[] lastRoundMessages;
     // numAllyAdjacent is indexed by the same was as Direction.getDirectionOrderNum
     public static int[] numAllyAdjacent;
     public static int inEnemyTowerRangeMask;
-
 
     public static final int CHIP_AGGREGATION_WINDOW = 50;
     public static int[] chipCountQueue;
@@ -59,6 +59,7 @@ public abstract class Robot extends Globals {
         locBeforeTurn = rc.getLocation();
         numTowers = rc.getNumberTowers();
         roundNum = rc.getRoundNum();
+        if (spawnRound == -1) spawnRound = roundNum;
         numAllyAdjacent = new int[9];
         lastRoundMessages = rc.readMessages(roundNum - 1);
         for (int i = nearbyAllyRobots.length; --i >= 0;) {
