@@ -327,7 +327,6 @@ public class Soldier extends Unit {
             }
 
             // Check for places to build SRPs
-
             precomputeIsSrpOk();
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 var tile = nearbyMapInfos[i];
@@ -357,13 +356,27 @@ public class Soldier extends Unit {
             return new MapLocation(Math.clamp(center.x + dx, 0, mapWidth - 1), Math.clamp(center.y + dy, 0, mapHeight - 1));
         }
 
-        static boolean tryRefill(MapLocation towerLoc) throws GameActionException {
+        static boolean tryRefillHint(MapLocation towerLoc) throws GameActionException {
             if (rc.canSenseRobotAtLocation(towerLoc)) {
                 var towerInfo = rc.senseRobotAtLocation(towerLoc);
                 if (towerInfo.team.equals(myTeam)) {
                     int paintWanted = Math.min(towerInfo.paintAmount, paintCapacity - rc.getPaint());
                     if (rc.canTransferPaint(towerLoc, -paintWanted)) {
                         rc.transferPaint(towerLoc, -paintWanted);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        static boolean tryRefill() throws GameActionException {
+            for (int i = nearbyAllyRobots.length; --i >= 0;) {
+                var info = nearbyAllyRobots[i];
+                if (info.type.isTowerType()) {
+                    int paintWanted = Math.min(info.paintAmount, paintCapacity - rc.getPaint());
+                    if (rc.canTransferPaint(info.location, -paintWanted)) {
+                        rc.transferPaint(info.location, -paintWanted);
                         return true;
                     }
                 }
@@ -406,7 +419,7 @@ public class Soldier extends Unit {
                 if (!rc.isActionReady()) {
                     return;
                 }
-                tryRefill(target);
+                tryRefillHint(target);
             }
 
             getProject();
