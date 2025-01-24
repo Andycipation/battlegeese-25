@@ -48,7 +48,9 @@ public class Splasher extends Unit {
             turnsNotMoved = 0;
 
             MapLocation possibleTarget = null;
-            if (informedEnemyPaintLoc != null && rc.canSenseLocation(informedEnemyPaintLoc) && rc.senseMapInfo(informedEnemyPaintLoc).getPaint().isEnemy()) {
+            if (informedEnemyPaintLoc != null && 
+                informedEnemyPaintLocTimestamp >= roundNum - 30 &&
+                !(rc.canSenseLocation(informedEnemyPaintLoc) && !rc.senseMapInfo(informedEnemyPaintLoc).getPaint().isEnemy())) {
                 possibleTarget = informedEnemyPaintLoc;
             }
             if (possibleTarget != null) {
@@ -100,6 +102,7 @@ public class Splasher extends Unit {
         public static long[] precompPointsMask = new long[4];
         public static int[] precompPoints = new int[41];
         public static FastSet splashSpotIndices = new FastSet();
+        public static MapLocation target;
 
         public static void precompAllPoints() {
             precompPointsMask = new long[4];
@@ -120,8 +123,24 @@ public class Splasher extends Unit {
         }
         
 
-        AggroStrategy() {
+        AggroStrategy() throws GameActionException {
             splashSpotIndices.add(new MapLocation(0, 4)); splashSpotIndices.add(new MapLocation(1, 3)); splashSpotIndices.add(new MapLocation(1, 4)); splashSpotIndices.add(new MapLocation(1, 5)); splashSpotIndices.add(new MapLocation(2, 2)); splashSpotIndices.add(new MapLocation(2, 3)); splashSpotIndices.add(new MapLocation(2, 4)); splashSpotIndices.add(new MapLocation(2, 5)); splashSpotIndices.add(new MapLocation(2, 6)); splashSpotIndices.add(new MapLocation(3, 1)); splashSpotIndices.add(new MapLocation(3, 2)); splashSpotIndices.add(new MapLocation(3, 3)); splashSpotIndices.add(new MapLocation(3, 4)); splashSpotIndices.add(new MapLocation(3, 5)); splashSpotIndices.add(new MapLocation(3, 6)); splashSpotIndices.add(new MapLocation(3, 7)); splashSpotIndices.add(new MapLocation(4, 0)); splashSpotIndices.add(new MapLocation(4, 1)); splashSpotIndices.add(new MapLocation(4, 2)); splashSpotIndices.add(new MapLocation(4, 3)); splashSpotIndices.add(new MapLocation(4, 4)); splashSpotIndices.add(new MapLocation(4, 5)); splashSpotIndices.add(new MapLocation(4, 6)); splashSpotIndices.add(new MapLocation(4, 7)); splashSpotIndices.add(new MapLocation(4, 8)); splashSpotIndices.add(new MapLocation(5, 1)); splashSpotIndices.add(new MapLocation(5, 2)); splashSpotIndices.add(new MapLocation(5, 3)); splashSpotIndices.add(new MapLocation(5, 4)); splashSpotIndices.add(new MapLocation(5, 5)); splashSpotIndices.add(new MapLocation(5, 6)); splashSpotIndices.add(new MapLocation(5, 7)); splashSpotIndices.add(new MapLocation(6, 2)); splashSpotIndices.add(new MapLocation(6, 3)); splashSpotIndices.add(new MapLocation(6, 4)); splashSpotIndices.add(new MapLocation(6, 5)); splashSpotIndices.add(new MapLocation(6, 6)); splashSpotIndices.add(new MapLocation(7, 3)); splashSpotIndices.add(new MapLocation(7, 4)); splashSpotIndices.add(new MapLocation(7, 5)); splashSpotIndices.add(new MapLocation(8, 4));
+            computeNewTarget();
+        }
+
+        void computeNewTarget() throws GameActionException {
+            MapLocation possibleTarget = null;
+            if (informedEnemyPaintLoc != null && 
+                informedEnemyPaintLocTimestamp >= roundNum - 30 &&
+                !(rc.canSenseLocation(informedEnemyPaintLoc) && !rc.senseMapInfo(informedEnemyPaintLoc).getPaint().isEnemy())) {
+                possibleTarget = informedEnemyPaintLoc;
+            }
+            if (possibleTarget != null) {
+                target = project(locBeforeTurn, possibleTarget);
+            }
+            else {
+                target = project(locBeforeTurn, new MapLocation(rng.nextInt(mapWidth), rng.nextInt(mapHeight)));
+            }
         }
 
         @Override
@@ -197,10 +216,19 @@ public class Splasher extends Unit {
                 rc.attack(splashSpots[bestAttack]);
             }
             else {
-                tryMoveBeyondFrontier();
-                tryMoveToSafeTile();
-                tryMoveLessSafeTile();
+                if (chebyshevDist(locBeforeTurn, target) <= 2) { // my target is likely outdated, reset!
+                    computeNewTarget();
+                }
+                Direction dir = BugNav.getDirectionToMove(target);
+                if (dir != null && !dirInEnemyTowerRange(dir)) {
+                    rc.move(dir);
+                }
+                else {
+                    tryMoveToSafeTile();
+                    tryMoveLessSafeTile();
+                }
             }
+            rc.setIndicatorLine(rc.getLocation(), target, 0, 255, 0);
         }
 
         public String toString() {
