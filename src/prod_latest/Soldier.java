@@ -12,17 +12,9 @@ public class Soldier extends Unit {
 
     public static MapLocation prevLoc = null;
 
-    public static void switchStrategy(SoldierStrategy newStrategy) {
-        strategy = newStrategy;
-    }
-
     @Override
     void play() throws GameActionException {
         if (strategy == null) {
-            // if (roundNum >= 30 && rng.nextInt(2) == 1) {
-            //     strategy = new CrusadeStrategy();
-            // }
-            // else strategy = new EarlyGameStrategy();
             strategy = new EarlyGameStrategy();
         }
         Logger.log(strategy.toString());
@@ -59,7 +51,6 @@ public class Soldier extends Unit {
         static long[] ruinBlocked;
         static long[] srpDone;
         static int[] precompIsSrpNotOk = new int[3];
-        static int turnsSinceInterestingActivity;
 
         EarlyGameStrategy() {
             srpBlocked = new long[mapHeight];
@@ -358,7 +349,7 @@ public class Soldier extends Unit {
                 }
             }
 
-            if (state == null || turnsLeftToExplore == 0 || rc.getLocation() == target) {
+            if (state == null || turnsLeftToExplore == 0 || rc.getLocation().equals(target)) {
                 state = StrategyState.EXPLORING;
                 turnsLeftToExplore = 8;
                 target = getRandomNearbyLocation(rc.getLocation(), 10, 20);
@@ -426,239 +417,146 @@ public class Soldier extends Unit {
             }
 
             getProject();
-
-            if (state == StrategyState.BUILDING_RUIN) {
-                turnsSinceInterestingActivity = 0;
-                // TODO: get closest tower to being built based on the pattern and keep building it
-                // System.out.println("used " + Clock.getBytecodeNum());
-                var ruinLoc = target;
-                if (rc.canSenseRobotAtLocation(ruinLoc)) {
-                    // Tower has been finished
-                    state = null;
-                    // act();
-                    return;
-                }
-                if (!patternAppearsClear(ruinLoc, false)) {
-                    // Enemy painted in the pattern
-                    state = null;
-                    // act();
-                    return;
-                }
-
-                final var towerType = getTowerToBuild();
-                BugNav.moveToward(ruinLoc);
-                final var paintLoc = locInPatternToAttack(ruinLoc, towerType);
-                if (paintLoc != null) {
-                    tryPaint(paintLoc, getTowerPaintColor(ruinLoc, paintLoc, towerType));
-                }
-
-                if (rc.canCompleteTowerPattern(towerType, ruinLoc)) {
-                    rc.completeTowerPattern(towerType, ruinLoc);
-                    int paintWanted = Math.min(rc.senseRobotAtLocation(ruinLoc).paintAmount, paintCapacity - rc.getPaint());
-                    if (rc.canTransferPaint(ruinLoc, -paintWanted)) {
-                        rc.transferPaint(ruinLoc, -paintWanted);
+            switch (state) {
+                case StrategyState.BUILDING_RUIN -> {
+                    var ruinLoc = target;
+                    if (rc.canSenseRobotAtLocation(ruinLoc)) {
+                        // Tower has been finished
+                        state = null;
+                        // act();
+                        return;
                     }
-                }
-                return;
-            }
+                    if (!patternAppearsClear(ruinLoc, false)) {
+                        // Enemy painted in the pattern
+                        state = null;
+                        // act();
+                        return;
+                    }
 
-            if (state == StrategyState.BUILDING_SRP) {
-                turnsSinceInterestingActivity = 0;
-                var srpCenter = target;
-                // System.out.println("used " + Clock.getBytecodeNum());
-                if (!isSrpOkManual(srpCenter)) {
-                    state = null;
-                    // act();
+                    final var towerType = getTowerToBuild();
+                    BugNav.moveToward(ruinLoc);
+                    final var paintLoc = locInPatternToAttack(ruinLoc, towerType);
+                    if (paintLoc != null) {
+                        tryPaint(paintLoc, getTowerPaintColor(ruinLoc, paintLoc, towerType));
+                    }
+
+                    if (rc.canCompleteTowerPattern(towerType, ruinLoc)) {
+                        rc.completeTowerPattern(towerType, ruinLoc);
+                        int paintWanted = Math.min(rc.senseRobotAtLocation(ruinLoc).paintAmount, paintCapacity - rc.getPaint());
+                        if (rc.canTransferPaint(ruinLoc, -paintWanted)) {
+                            rc.transferPaint(ruinLoc, -paintWanted);
+                        }
+                    }
                     return;
                 }
 
-                if (!rc.getLocation().equals(srpCenter)) {
-                    BugNav.moveToward(srpCenter);
-                } else {
-                    if (stepsOut < 4) {
-                        // Take a step out to see if the SRP pattern is actually bad
-                        var dir = diagonalDirections[stepsOut++];
-                        if (rc.canMove(dir)) {
-                            rc.move(dir);
+                case StrategyState.BUILDING_SRP -> {
+                    var srpCenter = target;
+                    if (!isSrpOkManual(srpCenter)) {
+                        state = null;
+                        // act();
+                        return;
+                    }
+
+                    if (!rc.getLocation().equals(srpCenter)) {
+                        BugNav.moveToward(srpCenter);
+                    } else {
+                        if (stepsOut < 4) {
+                            // Take a step out to see if the SRP pattern is actually bad
+                            var dir = diagonalDirections[stepsOut++];
+                            if (rc.canMove(dir)) {
+                                rc.move(dir);
+                            }
+                        }
+                    }
+                    final var newLoc = rc.getLocation();
+
+                    // Try painting
+                    boolean painted = false;
+                    final var paintLoc = locInPatternToAttack(srpCenter, null);
+                    if (paintLoc != null) {
+                        painted = tryPaint(paintLoc, getSrpPaintColor(paintLoc));
+                    }
+
+                    if (newLoc.distanceSquaredTo(srpCenter) <= 2 && rc.isActionReady() && !painted) {
+                        // SRP is finished
+                        state = null;
+                        srpDone[srpCenter.y] |= 1L << srpCenter.x;
+                        return;
+                    }
+
+                    // Try completing the SRP
+                    if (rc.canCompleteResourcePattern(srpCenter)) {
+                        rc.completeResourcePattern(srpCenter);
+                        state = null;
+                        srpDone[srpCenter.y] |= 1L << srpCenter.x;
+                    }
+                    return;
+                }
+
+                case StrategyState.KITING -> {
+                    if (!rc.canSenseRobotAtLocation(target)) {
+                        state = null;
+                        // act();
+                        return;
+                    }
+                    RobotInfo robotInfo = rc.senseRobotAtLocation(target);
+                    if (robotInfo.team.equals(myTeam)) {
+                        state = null;
+                        return;
+                    }
+                    if (tryAttack(target)) {
+                        var curLoc = rc.getLocation();
+                        var reflected = new MapLocation(2 * curLoc.x - target.x, 2 * curLoc.y - target.y);
+                        BugNav.moveToward(reflected);
+                    } else {
+                        BugNav.moveToward(target);
+                        tryAttack(target);
+                    }
+                    return;
+                }
+
+                case StrategyState.EXPLORING -> {
+                    // Just explore towards target
+                    turnsLeftToExplore -= 1;
+                    BugNav.moveToward(target);
+                    var newLoc = rc.getLocation();
+                    boolean painted = false;
+                    if (rc.senseMapInfo(newLoc).getPaint() == PaintType.EMPTY) {
+                        painted = tryPaintBelowSelf(getSrpPaintColor(newLoc));
+                    }
+
+                    if (!painted && rc.getRoundNum() >= 200) {
+                        MapInfo[] attackableTiles = rc.senseNearbyMapInfos(newLoc, actionRadiusSquared);
+                        for (int i = attackableTiles.length; --i >= 0;) {
+                            MapInfo tile = attackableTiles[i];
+                            MapLocation loc = tile.getMapLocation();
+                            if (!tile.getPaint().isAlly() && tryPaint(loc, getSrpPaintColor(loc))) {
+                                break;
+                            }
+                        }
+                    }
+                    // Always try to complete any resource pattern in range
+                    for (int i = nearbyMapInfos.length; --i >= 0;) {
+                        MapLocation loc = nearbyMapInfos[i].getMapLocation();
+                        if (isInSrpCenterLocation(loc) && rc.canCompleteResourcePattern(loc)) {
+                            rc.completeResourcePattern(loc);
                         }
                     }
                 }
-                final var newLoc = rc.getLocation();
 
-                // Try painting
-                boolean painted = false;
-                final var paintLoc = locInPatternToAttack(srpCenter, null);
-                if (paintLoc != null) {
-                    painted = tryPaint(paintLoc, getSrpPaintColor(paintLoc));
-                }
-
-                if (newLoc.distanceSquaredTo(srpCenter) <= 2 && rc.isActionReady() && !painted) {
-                    // SRP is finished
-                    state = null;
-                    srpDone[srpCenter.y] |= 1L << srpCenter.x;
-                    return;
-                }
-
-                // Try completing the SRP
-                if (rc.canCompleteResourcePattern(srpCenter)) {
-                    rc.completeResourcePattern(srpCenter);
-                    state = null;
-                    srpDone[srpCenter.y] |= 1L << srpCenter.x;
-                }
-
-                return;
-            }
-
-            if (state == StrategyState.KITING) {
-                turnsSinceInterestingActivity = 0;
-                if (!rc.canSenseRobotAtLocation(target)) {
-                    state = null;
-                    // act();
-                    return;
-                }
-                RobotInfo robotInfo = rc.senseRobotAtLocation(target);
-                if (robotInfo.team.equals(myTeam)) {
-                    state = null;
-                    return;
-                }
-                if (tryAttack(target)) {
-                    var curLoc = rc.getLocation();
-                    var reflected = new MapLocation(2 * curLoc.x - target.x, 2 * curLoc.y - target.y);
-                    BugNav.moveToward(reflected);
-                } else {
-                    BugNav.moveToward(target);
-                    tryAttack(target);
-                }
-                return;
-            }
-
-            // Just explore towards target
-            turnsLeftToExplore -= 1;
-            BugNav.moveToward(target);
-            var newLoc = rc.getLocation();
-            boolean painted = false;
-            if (rc.senseMapInfo(newLoc).getPaint() == PaintType.EMPTY) {
-                painted = tryPaintBelowSelf(getSrpPaintColor(newLoc));
-            }
-
-            if (!painted && rc.getRoundNum() >= 200) {
-                MapInfo[] attackableTiles = rc.senseNearbyMapInfos(newLoc, actionRadiusSquared);
-                for (int i = attackableTiles.length; --i >= 0;) {
-                    MapInfo tile = attackableTiles[i];
-                    MapLocation loc = tile.getMapLocation();
-                    if (!tile.getPaint().isAlly() && tryPaint(loc, getSrpPaintColor(loc))) {
-                        break;
-                    }
+                default -> {
+                    // Soldier StrategyState should never be null after getting a project
+                    assert(false);
                 }
             }
 
-            // try to complete any resource pattern in range
-            for (int i = nearbyMapInfos.length; --i >= 0;) {
-                MapLocation loc = nearbyMapInfos[i].getMapLocation();
-                if (isInSrpCenterLocation(loc) && rc.canCompleteResourcePattern(loc)) {
-                    rc.completeResourcePattern(loc);
-                }
-            }
+            // tryRefill();
         }
 
         @Override
         public String toString() {
             return "EarlyGameStrategy " + state + " " + target;
-        }
-    }
-
-    static class CrusadeStrategy extends SoldierStrategy {
-        enum StrategyState {
-            KITING,
-            TRAVELLING,
-        }
-        
-        public static StrategyState state = null;
-        public static MapLocation target = null;
-        public static MapLocation[] checkpoints;
-        public static int checkpointPtr = 0;
-
-        CrusadeStrategy() {
-            if (rng.nextInt(2) == 0) {
-                checkpoints = new MapLocation[3];
-                checkpoints[0] = reflectXY(spawnLocation);
-                checkpoints[1] = reflectX(spawnLocation);
-                checkpoints[2] = reflectY(spawnLocation);
-            }
-            else {
-                checkpoints = new MapLocation[4];
-                checkpoints[0] = new MapLocation(0, 0);
-                checkpoints[1] = new MapLocation(mapWidth-1, 0);
-                checkpoints[2] = new MapLocation(mapWidth-1, mapHeight-1);
-                checkpoints[3] = new MapLocation(0, mapHeight-1);
-                checkpointPtr = rng.nextInt(4);
-            }
-            state = StrategyState.TRAVELLING;
-        }
-
-
-        @Override
-        public void act() throws GameActionException{
-            if (state == null) {
-                state = StrategyState.TRAVELLING;
-            }
-
-            if (state == StrategyState.TRAVELLING) {
-                for (int i = nearbyEnemyRobots.length; --i >= 0;) {
-                    var robotInfo = nearbyEnemyRobots[i];
-                    if (robotInfo.type.isTowerType()) {
-                        state = StrategyState.KITING;
-                        target = robotInfo.location;
-                        act();
-                        return;
-                    }
-                }
-
-                if (rc.getLocation().isAdjacentTo(checkpoints[checkpointPtr])) {
-                    checkpointPtr = (checkpointPtr + 1) % checkpoints.length;
-                }
-                MapLocation checkpoint = checkpoints[checkpointPtr];
-                BugNav.moveToward(checkpoint);
-                rc.setIndicatorLine(rc.getLocation(), checkpoint, 0, 255, 0);
-                if (roundNum % 5 == 0) { // attack infrequently to conserve paint :)
-                    MapInfo[] attackableTiles = rc.senseNearbyMapInfos(rc.getLocation(), actionRadiusSquared);
-                    for (int i = attackableTiles.length; --i >= 0;) {
-                        MapInfo tile = attackableTiles[i];
-                        MapLocation loc = tile.getMapLocation();
-                        if (tile.getPaint() == PaintType.EMPTY && tryPaint(loc, getSrpPaintColor(loc))) {
-                            break;
-                        }
-                    }
-                }
-                return;
-            }
-
-            if (state == StrategyState.KITING) {
-                if (!rc.canSenseRobotAtLocation(target)) {
-                    state = null;
-                    act();
-                    return;
-                }
-                RobotInfo robotInfo = rc.senseRobotAtLocation(target);
-                if (robotInfo.team.equals(myTeam)) {
-                    state = null;
-                    act();
-                    return;
-                }
-                if (tryAttack(target)) {
-                    var curLoc = rc.getLocation();
-                    var reflected = new MapLocation(2 * curLoc.x - target.x, 2 * curLoc.y - target.y);
-                    BugNav.moveToward(reflected);
-                } else {
-                    BugNav.moveToward(target);
-                    tryAttack(target);
-                }
-                return;
-            }
-        }
-
-        public String toString() {
-            return "CrusadeStrategy " + state + " " + target;
         }
     }
 }
