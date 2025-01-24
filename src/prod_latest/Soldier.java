@@ -3,14 +3,7 @@ package prod_latest;
 import battlecode.common.*;
 
 public class Soldier extends Unit {
-    /**
-     * Our strategy is to pick a random location and wander over for 8 turns, and if
-     * ruin is found switch to build tower strategy.
-     */
-
     static SoldierStrategy strategy;
-
-    public static MapLocation prevLoc = null;
 
     @Override
     void play() throws GameActionException {
@@ -551,7 +544,7 @@ public class Soldier extends Unit {
                 }
             }
 
-            // tryRefill();
+            tryRefill();
         }
 
         @Override
