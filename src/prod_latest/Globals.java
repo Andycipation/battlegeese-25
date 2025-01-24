@@ -313,7 +313,7 @@ public class Globals {
     public static boolean isInSrpCenterLocation(MapLocation loc) {
         int dx = loc.x;
         int dy = loc.y;
-        if (rc.getTeam() == Team.B) {
+        if (myTeam == Team.B) {
             dx = mapWidth - 1 - dx;
             dy = mapHeight - 1 - dy;
         }
