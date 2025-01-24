@@ -113,7 +113,7 @@ public class Mopper extends Unit {
         }
         if (bestAlly != null) {
             rc.transferPaint(bestAlly.getLocation(), amount);
-            rc.setTimelineMarker("transferred paint!", 0, 255, 0);
+            // rc.setTimelineMarker("transferred paint!", 0, 255, 0);
             return true;
         }
         return false;
@@ -348,24 +348,48 @@ public class Mopper extends Unit {
     public static boolean tryMoveAttackEnemyTileWithEnemyRobot() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
-            if (isEnemyTerritory(dir)) continue;
-            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getMoveAdjEnemyTileWithEnemyRobot(dir)) {
+            // if (isEnemyTerritory(dir)) continue;
+            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) 
+                && getMoveAdjEnemyTileWithEnemyRobot(dir) 
+                && (!isEnemyTerritory(dir) || rc.isActionReady())) {
                 mdir(dir);
                 for (int j = nearbyEnemyRobots.length; --j >= 0;) {
                     RobotInfo enemy = nearbyEnemyRobots[j];
                     if (enemy.getType().isRobotType() && rc.canAttack(enemy.getLocation()) && rc.senseMapInfo(enemy.getLocation()).getPaint().isEnemy()) {
                         rc.attack(enemy.getLocation());
-                        message += "MoveAttackEnemyTileWithEnemyRobot" + enemy.getLocation();
+                        // message += "MoveAttackEnemyTileWithEnemyRobot" + enemy.getLocation();
                         return true;
                     }
                 }
-                message += "NO ATTACK DONE WAAAAAH";
+                // message += "NO ATTACK DONE WAAAAAH";
                 return true;
             }
         }
         return false;
     }
 
+    // public static boolean tryMoveAttackBest() throws GameActionException {
+    //     Direction bestMoveDir = null;
+    //     Direction bestAttackDir = null;
+    //     int tileWithEnemyRobot = 0;
+    //     int moveLocState = 0; // 0 enemy tile, 1 empty tile, 2 friendly tile
+    //     for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+    //         Direction dir = Direction.DIRECTION_ORDER[i];
+    //         if ((isEnemyTerritory(dir) && !rc.isActionReady()) 
+    //         || !dirInEnemyTowerRange(dir) || !(i == 0 || rc.canMove(dir))) continue;
+    //         MapLocation nxtLoc = rc.getLocation().add(dir);
+    //         // feasible
+    //         for (int j = nearbyEnemyRobots.length; --j >= 0;) {
+    //             RobotInfo enemy = nearbyEnemyRobots[j];
+    //             MapLocation enemyLoc = enemy.getLocation();
+    //             if (nxtLoc.isAdjacentTo(enemyLoc)) {
+    //                 if ()
+    //                 if (rc.senseMapInfo(enemyLoc).getPaint())
+    //             }
+    //         }
+    //     }
+    //     return false;
+    // }
     // return true if just moved
     public static boolean tryMoveSweepCrowd() throws GameActionException {
         Direction bestMoveDir = null;
@@ -386,13 +410,13 @@ public class Mopper extends Unit {
                 } 
             }
         }
-        message += "sweep gets " + bestSweep;
+        // message += "sweep gets " + bestSweep;
         if (bestMoveDir != null && bestSweep >= 2) {
             mdir(bestMoveDir);
             if (rc.canMopSwing(bestSweepDir)) {
                 rc.mopSwing(bestSweepDir);
             }
-            message += "tryMoveSweepCrowd";
+            // message += "tryMoveSweepCrowd";
             return true;
         } 
         return false;
@@ -401,11 +425,12 @@ public class Mopper extends Unit {
     public static boolean tryMoveAttackEnemyRobotWithoutTile() throws GameActionException {
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
-            if (isEnemyTerritory(dir)) continue;
-            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) && getMoveAdjEnemyRobot(dir)) {
+            // if (isEnemyTerritory(dir) || !rc.isActionReady()) continue;
+            if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) 
+            && getMoveAdjEnemyRobot(dir) && (!isEnemyTerritory(dir) || rc.isActionReady())) {
                 mdir(dir);
                 tryAttackEnemyRobot();
-                message += "tryMoveAttackEnemyRobotWithoutTile";
+                // message += "tryMoveAttackEnemyRobotWithoutTile";
                 return true;
             }
         }
@@ -681,7 +706,6 @@ public class Mopper extends Unit {
 
         public void act() throws GameActionException {
             boolean acted = false;
-            message = "";
             if (rc.isMovementReady()) {
                 int bytecode = Clock.getBytecodeNum();
                 precomputeMovementInfo();
@@ -708,7 +732,6 @@ public class Mopper extends Unit {
             }
 
             if (!acted) {
-                message += "not acted";
                 tryMoveToFrontier();
                 int bytecode = Clock.getBytecodeNum();
     
