@@ -69,10 +69,10 @@ public class Globals {
         return boolArray;
     }
 
-    public static enum MapCategory {
-        SIZE1, SIZE2, SIZE3;
+    public static enum MapSize {
+        SMALL, MEDIUM, LARGE,
     }
-    public static MapCategory mapCategory;
+    public static MapSize mapSize;
 
     public static void init(RobotController _rc) {
         rc = _rc;
@@ -97,13 +97,13 @@ public class Globals {
 
         spawnLocation = rc.getLocation();
 
-        int mapArea = mapWidth * mapHeight;
+        final int mapArea = mapWidth * mapHeight;
         if (mapArea < 900) {
-            Globals.mapCategory = MapCategory.SIZE1;
+            mapSize = MapSize.SMALL;
         } else if (mapArea < 1600) {
-            Globals.mapCategory = MapCategory.SIZE2;
+            mapSize = MapSize.MEDIUM;
         } else {
-            Globals.mapCategory = MapCategory.SIZE3;
+            mapSize = MapSize.LARGE;
         }
     }
 
