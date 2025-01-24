@@ -53,7 +53,12 @@ public class Soldier extends Unit {
 
         static UnitType getTowerToBuild() {
             // The first two are in case we drop below 2 towers
-            final int[] ORDER = {1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2};
+            final int[] ORDER = switch (mapSize) {
+                case SMALL -> new int[]{0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1};
+                case MEDIUM -> new int[]{0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0};
+                default -> new int[]{0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2};
+            };
+
             if (numTowers >= ORDER.length || rc.getChips() >= 40000) {
                 return UnitType.LEVEL_ONE_PAINT_TOWER;
             }

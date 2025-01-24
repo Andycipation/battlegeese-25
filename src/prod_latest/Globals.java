@@ -98,9 +98,9 @@ public class Globals {
         spawnLocation = rc.getLocation();
 
         final int mapArea = mapWidth * mapHeight;
-        if (mapArea < 900) {
+        if (mapArea <= 900) {
             mapSize = MapSize.SMALL;
-        } else if (mapArea < 1600) {
+        } else if (mapArea < 1800) {
             mapSize = MapSize.MEDIUM;
         } else {
             mapSize = MapSize.LARGE;
