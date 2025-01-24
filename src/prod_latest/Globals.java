@@ -165,7 +165,7 @@ public class Globals {
     }
 
     public static boolean withinPattern(MapLocation center, MapLocation loc) {
-        return chebyshevDist(center, loc) <= 2;
+        return center.isWithinDistanceSquared(loc, 8);
     }
     
     /**
