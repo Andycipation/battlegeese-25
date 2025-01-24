@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v12;
 
 import battlecode.common.*;
 import prod_latest.Splasher.SplasherStrategy;

@@ -12,7 +12,7 @@ def encode(x, y):
     return (x // 3, 9 * (x % 3) + y)
 
 
-print("switch (diff.x * 1000 + diff.y) {")
+print("switch ((diff.x + 4) * 9 + (diff.y + 4)) {")
 for dx in range(-4, 5):
     for dy in range(-4, 5):
         if dist2(dx, dy, 0, 0) > 20:
@@ -24,8 +24,28 @@ for dx in range(-4, 5):
                     i, b = encode(x, y)
                     masks[i] |= (1 << b)
         if masks != [0, 0, 0]:
-            print(f"    case {dx * 1000 + dy}: ", end="")
+            print(f"    case {(dx + 4) * 9 + dy + 4}: ", end="")
             for i, b in enumerate(masks):
-                print(f"precompAppearsClear[{i}] |= {b}; ",end="")
+                if b != 0:
+                    print(f"precompAppearsClear[{i}] |= {b}; ",end="")
+            print(f"break; // ({dx}, {dy})")
+print("}")
+
+print("switch ((diff.x + 4) * 9 + (diff.y + 4)) {")
+for dx in range(-4, 5):
+    for dy in range(-4, 5):
+        if dist2(dx, dy, 0, 0) > 20:
+            continue
+        masks = [0, 0, 0]
+        for x in range(-4, 5):
+            for y in range(-4, 5):
+                if (chebyshev(dx, dy, x, y) <= 4):
+                    i, b = encode(x, y)
+                    masks[i] |= (1 << b)
+        if masks != [0, 0, 0]:
+            print(f"    case {(dx + 4) * 9 + dy + 4}: ", end="")
+            for i, b in enumerate(masks):
+                if b != 0:
+                    print(f"precompAppearsClear[{i}] |= {b}; ",end="")
             print(f"break; // ({dx}, {dy})")
 print("}")
