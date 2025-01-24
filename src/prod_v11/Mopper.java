@@ -113,7 +113,7 @@ public class Mopper extends Unit {
         }
         if (bestAlly != null) {
             rc.transferPaint(bestAlly.getLocation(), amount);
-            rc.setTimelineMarker("transferred paint!", 0, 255, 0);
+            // rc.setTimelineMarker("transferred paint!", 0, 255, 0);
             return true;
         }
         return false;
