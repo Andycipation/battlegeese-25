@@ -87,7 +87,7 @@ public class Tower extends Robot {
 
         @Override
         public void receiveAndBroadcast() throws GameActionException {
-
+            
             // process informs from last round
             for (int i = lastRoundMessages.length; --i >= 0;) {
                 int messageBytes = lastRoundMessages[i].getBytes();
@@ -105,9 +105,11 @@ public class Tower extends Robot {
                         break;
                 }
             }
-    
+
+            int offset = rng.nextInt(nearbyMapInfos.length);
+
             for (int i = nearbyMapInfos.length; --i >= 0; ) {
-                MapInfo tile = nearbyMapInfos[i];
+                MapInfo tile = nearbyMapInfos[(i + offset) % nearbyMapInfos.length];
                 MapLocation loc = tile.getMapLocation();
                 if (!tile.isPassable()) continue;
                 if (tile.getPaint() == PaintType.EMPTY) {

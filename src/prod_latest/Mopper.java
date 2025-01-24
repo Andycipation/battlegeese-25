@@ -346,24 +346,37 @@ public class Mopper extends Unit {
     
     // return true if just moved
     public static boolean tryMoveAttackEnemyTileWithEnemyRobot() throws GameActionException {
+        int minPenalty = 1000;
+        Direction bestMoveDir = null;
+        MapLocation bestAttackLoc = null;
+
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
-            // if (isEnemyTerritory(dir)) continue;
             if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) 
                 && getMoveAdjEnemyTileWithEnemyRobot(dir) 
                 && (!isEnemyTerritory(dir) || rc.isActionReady())) {
-                mdir(dir);
-                for (int j = nearbyEnemyRobots.length; --j >= 0;) {
-                    RobotInfo enemy = nearbyEnemyRobots[j];
-                    if (enemy.getType().isRobotType() && rc.canAttack(enemy.getLocation()) && rc.senseMapInfo(enemy.getLocation()).getPaint().isEnemy()) {
-                        rc.attack(enemy.getLocation());
-                        // message += "MoveAttackEnemyTileWithEnemyRobot" + enemy.getLocation();
-                        return true;
+                int penalty = numAllyAdjacent[dir.getDirectionOrderNum()];
+                if (bestMoveDir == null || penalty < minPenalty) {
+                    bestMoveDir = dir;
+                    minPenalty = penalty;
+                    for (int j = nearbyEnemyRobots.length; --j >= 0;) {
+                        RobotInfo enemy = nearbyEnemyRobots[j];
+                        if (enemy.getType().isRobotType() && rc.getLocation().add(dir).isWithinDistanceSquared(enemy.getLocation(), actionRadiusSquared) && rc.senseMapInfo(enemy.getLocation()).getPaint().isEnemy()) {
+                            bestAttackLoc = enemy.getLocation();
+                            break;
+                        }
                     }
+                    if (minPenalty == 0) break;
                 }
-                // message += "NO ATTACK DONE WAAAAAH";
-                return true;
             }
+        }
+        if (bestMoveDir != null) {
+            mdir(bestMoveDir);
+            Logger.log("attacked tile with enemy " + bestMoveDir);
+            if (bestAttackLoc != null && rc.canAttack(bestAttackLoc)) {
+                rc.attack(bestAttackLoc);
+            }
+            return true;
         }
         return false;
     }
@@ -395,6 +408,7 @@ public class Mopper extends Unit {
         Direction bestMoveDir = null;
         Direction bestSweepDir = null;
         int bestSweep = 0;
+        int minPenalty = 1000;
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction moveDir = Direction.DIRECTION_ORDER[i];
             if (isEnemyTerritory(moveDir)) continue;
@@ -402,10 +416,12 @@ public class Mopper extends Unit {
                 for (int j = 4; --j >= 0;) {
                     Direction swingDir = cardinalDirections[j];
                     int cnt = getMoveEnemiesSwept(moveDir, swingDir);
-                    if (cnt > bestSweep) {
+                    int penalty = numAllyAdjacent[moveDir.getDirectionOrderNum()];
+                    if (cnt > bestSweep || (cnt == bestSweep && penalty < minPenalty)) {
                         bestMoveDir = moveDir;
                         bestSweepDir = swingDir;
                         bestSweep = cnt;
+                        minPenalty = penalty;
                     }
                 } 
             }
@@ -413,6 +429,7 @@ public class Mopper extends Unit {
         // message += "sweep gets " + bestSweep;
         if (bestMoveDir != null && bestSweep >= 2) {
             mdir(bestMoveDir);
+            Logger.log("best sweepper " + bestMoveDir + " " + bestSweepDir);
             if (rc.canMopSwing(bestSweepDir)) {
                 rc.mopSwing(bestSweepDir);
             }
@@ -423,16 +440,23 @@ public class Mopper extends Unit {
     }
 
     public static boolean tryMoveAttackEnemyRobotWithoutTile() throws GameActionException {
+        int minPenalty = 1000;
+        Direction bestMoveDir = null;
         for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
             Direction dir = Direction.DIRECTION_ORDER[i];
-            // if (isEnemyTerritory(dir) || !rc.isActionReady()) continue;
+            int penalty = numAllyAdjacent[i];
             if ((i == 0 || rc.canMove(dir)) && !dirInEnemyTowerRange(dir) 
-            && getMoveAdjEnemyRobot(dir) && (!isEnemyTerritory(dir) || rc.isActionReady())) {
-                mdir(dir);
-                tryAttackEnemyRobot();
-                // message += "tryMoveAttackEnemyRobotWithoutTile";
-                return true;
+            && getMoveAdjEnemyRobot(dir) && (!isEnemyTerritory(dir) || rc.isActionReady()) && penalty < minPenalty) {
+                minPenalty = penalty;
+                bestMoveDir = dir;
+                if (minPenalty == 0) break;
             }
+        }
+        if (bestMoveDir != null) {
+            mdir(bestMoveDir);
+            Logger.log("attacked enemy WITHOUT tile " + bestMoveDir);
+            tryAttackEnemyRobot();
+            return true;
         }
         return false;
     }
@@ -462,7 +486,6 @@ public class Mopper extends Unit {
             MapInfo tile = rc.senseMapInfo(attackLoc);
             if (tile.getPaint().isEnemy()) {
                 int cnt = getNumAllyTilesAdjacent(dir);
-                message += "reached";
                 if (cnt > mostAdjacentCnt || bestAttackLoc == null) {
                     bestAttackLoc = attackLoc;
                     mostAdjacentCnt = cnt;
@@ -485,7 +508,7 @@ public class Mopper extends Unit {
         }
         strategy.act();
         Logger.log(strategy.toString());
-        if (rc.getPaint() < 30  && paintTowerLoc != null && rc.getChips() < 3000) {
+        if (rc.getPaint() < 30  && paintTowerLoc != null && rc.getNumberTowers() < 10) {
             Logger.log("refilling paint");
             Logger.flush();
             strategy = new RefillPaintStrategy(100);
@@ -706,6 +729,7 @@ public class Mopper extends Unit {
 
         public void act() throws GameActionException {
             boolean acted = false;
+            message = "";
             if (rc.isMovementReady()) {
                 int bytecode = Clock.getBytecodeNum();
                 precomputeMovementInfo();

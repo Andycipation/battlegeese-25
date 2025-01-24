@@ -25,7 +25,7 @@ public class Splasher extends Unit {
         }
         strategy.act();
         Logger.log(strategy.toString());
-        if (rc.getPaint() < 50 && paintTowerLoc != null) {
+        if (rc.getPaint() < 50 && paintTowerLoc != null && rc.getNumberTowers() < 10) {
             Logger.log("refilling paint");
             Logger.flush();
             strategy = new RefillPaintStrategy(300);
