@@ -205,14 +205,11 @@ public class Tower extends Robot {
             // Compute the initial number of soldiers to spawn'
             if (towerNumAtSpawn <= 2) {
                 if (isPaintTower(rc.getType())) {
-                    final int numTiles = mapHeight * mapWidth;
-                    if (numTiles > 2500) {
-                        initialSoldiersToSpawn = 4;
-                    } else if (numTiles > 1500) {
-                        initialSoldiersToSpawn = 3;
-                    } else {
-                        initialSoldiersToSpawn = 2;
-                    }
+                    initialSoldiersToSpawn = switch (mapSize) {
+                        case SMALL -> 2;
+                        case MEDIUM -> 3;
+                        case LARGE -> 4;
+                    };
                 } else {
                     initialSoldiersToSpawn = 2;
                 }
@@ -264,10 +261,10 @@ public class Tower extends Robot {
             return false;
         }
 
-        static MapLocation hasNearbyEnemy(UnitType type) {
+        static MapLocation hasNearbyEnemy(UnitType type1, UnitType type2) {
             for (int i = nearbyEnemyRobots.length; --i >= 0;) {
                 var info = nearbyEnemyRobots[i];
-                if (info.type == type) {
+                if (info.type == type1 || info.type == type2) {
                     return info.location;
                 }
             }
@@ -289,7 +286,7 @@ public class Tower extends Robot {
             }
 
             if (numMoppersSpawned < 3) {
-                var enemyLoc = hasNearbyEnemy(UnitType.SOLDIER);
+                var enemyLoc = hasNearbyEnemy(UnitType.SOLDIER, UnitType.SPLASHER);
                 if (enemyLoc != null) {
                     var dir = rc.getLocation().directionTo(enemyLoc);
                     if (tryBuildUnit(UnitType.MOPPER, dir) != null) {
