@@ -197,7 +197,7 @@ public class Splasher extends Unit {
                 rc.attack(splashSpots[bestAttack]);
             }
             else {
-                tryMoveToFrontier();
+                tryMoveBeyondFrontier();
                 tryMoveToSafeTile();
                 tryMoveLessSafeTile();
             }

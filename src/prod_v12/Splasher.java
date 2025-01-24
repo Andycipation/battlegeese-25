@@ -1,6 +1,7 @@
 package prod_v12;
 
 import battlecode.common.*;
+import prod_latest.Splasher.SplasherStrategy;
 
 public class Splasher extends Unit {
 
@@ -196,7 +197,7 @@ public class Splasher extends Unit {
                 rc.attack(splashSpots[bestAttack]);
             }
             else {
-                tryMoveToFrontier();
+                tryMoveBeyondFrontier();
                 tryMoveToSafeTile();
                 tryMoveLessSafeTile();
             }

@@ -203,6 +203,41 @@ public abstract class Unit extends Robot {
         return false;
     }
 
+    public static boolean tryMoveBeyondFrontier() throws GameActionException {
+        MapLocation attackLoc = informedEnemyPaintLoc;
+        if (attackLoc != null) attackLoc = project(rc.getLocation(), attackLoc);
+
+        if (attackLoc != null && rc.getLocation().isWithinDistanceSquared(attackLoc, visionRadiusSquared) 
+        && rc.senseMapInfo(attackLoc).getPaint() == PaintType.EMPTY) {
+            attackLoc = null;
+        }
+
+        // Optional optimization, remove if degrades performance or uses excess bytecode
+        for (int i = adjacentDirections.length; --i >= 0;) {
+            Direction dir = adjacentDirections[i];
+            MapLocation nxtLoc = rc.getLocation().add(dir);
+            if (!withinBounds(nxtLoc)) continue;
+            MapInfo tile = rc.senseMapInfo(nxtLoc);
+            if (tile.getPaint().isEnemy()) {
+                attackLoc = nxtLoc;
+                break;
+            }
+        }
+
+        if (attackLoc != null) {
+            Direction dir = BugNav.getDirectionToMove(attackLoc);
+            if (dir != null && rc.canMove(dir)) {
+                MapLocation nxtLoc = rc.getLocation().add(dir);
+                MapInfo tile = rc.senseMapInfo(nxtLoc);
+                if (!inEnemyTowerRange(nxtLoc)) {
+                    rc.move(dir);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static boolean inEnemyTowerRange(MapLocation loc) throws GameActionException {
         for (int i = nearbyEnemyRobots.length; --i >= 0;) {
             RobotInfo robotInfo = nearbyEnemyRobots[i];
