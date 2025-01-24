@@ -49,7 +49,7 @@ public class RobotPlayer extends Globals {
 
         int usedBytecodes = startRound == endRound
             ? endBytecodes - startBytecodes
-            : (bytecodeLimit - startBytecodes) + (endRound - startRound) * bytecodeLimit + endBytecodes;
+            : (bytecodeLimit - startBytecodes) + (endRound - startRound - 1) * bytecodeLimit + endBytecodes;
 
         double bytecodePercentage = (double) usedBytecodes / (double) bytecodeLimit * 100.0;
 
