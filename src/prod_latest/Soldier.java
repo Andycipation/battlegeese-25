@@ -310,9 +310,9 @@ public class Soldier extends Unit {
 
         void getProject() throws GameActionException {
             // Check if we need to attack an enemy tower
-            for (int i = nearbyEnemyRobots.length; --i >= 0;) {
-                var robotInfo = nearbyEnemyRobots[i];
-                if (robotInfo.type.isTowerType()) {
+            for (int i = nearbyRuins.length; --i >= 0;) {
+                var robotInfo = rc.senseRobotAtLocation(nearbyRuins[i]);
+                if (robotInfo != null && robotInfo.type.isTowerType() && robotInfo.team == opponentTeam) {
                     state = StrategyState.KITING;
                     target = robotInfo.location;
                     return;
@@ -344,10 +344,7 @@ public class Soldier extends Unit {
 
             // Check for places to build SRPs
 
-            Profiler profiler = new Profiler();
             precomputeIsSrpOk();
-            profiler.printBytecodeUsed("precompute");
-            profiler = new Profiler();
             for (int i = nearbyMapInfos.length; --i >= 0;) {
                 var tile = nearbyMapInfos[i];
                 var loc = tile.getMapLocation();
@@ -356,12 +353,10 @@ public class Soldier extends Unit {
                         state = StrategyState.BUILDING_SRP;
                         target = loc;
                         stepsOut = 0;
-                        profiler.printBytecodeUsed("SRP");
                         return;
                     }
                 }
             }
-            profiler.printBytecodeUsed("SRP");
 
             if (state == null || turnsLeftToExplore == 0 || rc.getLocation() == target) {
                 state = StrategyState.EXPLORING;
@@ -430,13 +425,12 @@ public class Soldier extends Unit {
                 tryRefill(target);
             }
 
-            // Profiler profiler = new Profiler();
             getProject();
-            // profiler.printBytecodeUsed("getProject");
 
             if (state == StrategyState.BUILDING_RUIN) {
                 turnsSinceInterestingActivity = 0;
                 // TODO: get closest tower to being built based on the pattern and keep building it
+                System.out.println("used " + Clock.getBytecodeNum());
                 var ruinLoc = target;
                 if (rc.canSenseRobotAtLocation(ruinLoc)) {
                     // Tower has been finished
@@ -471,6 +465,7 @@ public class Soldier extends Unit {
             if (state == StrategyState.BUILDING_SRP) {
                 turnsSinceInterestingActivity = 0;
                 var srpCenter = target;
+                System.out.println("used " + Clock.getBytecodeNum());
                 if (!isSrpOkManual(srpCenter)) {
                     state = null;
                     act();
@@ -518,6 +513,7 @@ public class Soldier extends Unit {
                 turnsSinceInterestingActivity = 0;
                 if (!rc.canSenseRobotAtLocation(target)) {
                     state = null;
+                    act();
                     return;
                 }
                 RobotInfo robotInfo = rc.senseRobotAtLocation(target);
