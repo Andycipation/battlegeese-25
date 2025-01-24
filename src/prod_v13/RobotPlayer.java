@@ -55,10 +55,10 @@ public class RobotPlayer extends Globals {
 
         double bytecodePercentage = (double) usedBytecodes / (double) bytecodeLimit * 100.0;
 
-        if (startRound != endRound) {
-            System.out.println(rc.getLocation() + " " + rc.getType() + " Bytecode overflow: " + usedBytecodes + " (" + bytecodePercentage + "%)" + " Round: " + startRound + " -> " + endRound);
-        } else if (bytecodePercentage > 95) {
-            System.out.println(rc.getLocation() + " " + rc.getType() + " High bytecode usage: " + usedBytecodes + " (" + bytecodePercentage + "%)");
-        }
+        // if (startRound != endRound) {
+        //     System.out.println(rc.getLocation() + " " + rc.getType() + " Bytecode overflow: " + usedBytecodes + " (" + bytecodePercentage + "%)" + " Round: " + startRound + " -> " + endRound);
+        // } else if (bytecodePercentage > 95) {
+        //     System.out.println(rc.getLocation() + " " + rc.getType() + " High bytecode usage: " + usedBytecodes + " (" + bytecodePercentage + "%)");
+        // }
     }
 }
