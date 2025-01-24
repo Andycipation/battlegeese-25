@@ -15,7 +15,7 @@ public class Mopper extends Unit {
 
     public static void switchStrategy(MopperStrategy newStrategy, boolean acted) throws GameActionException {
         strategy = newStrategy;
-        if (!acted) strategy.act();
+        // if (!acted) strategy.act();
     }
 
     public static void yieldStrategy() throws GameActionException {
