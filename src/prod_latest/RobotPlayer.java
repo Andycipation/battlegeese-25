@@ -51,13 +51,13 @@ public class RobotPlayer extends Globals {
 
         int usedBytecodes = startRound == endRound
             ? endBytecodes - startBytecodes
-            : (bytecodeLimit - startBytecodes) + Math.max(0, endRound - startRound - 1) * bytecodeLimit + endBytecodes;
+            : (bytecodeLimit - startBytecodes) + (endRound - startRound) * bytecodeLimit + endBytecodes;
 
         double bytecodePercentage = (double) usedBytecodes / (double) bytecodeLimit * 100.0;
 
         if (startRound != endRound) {
             System.out.println(rc.getLocation() + " " + rc.getType() + " Bytecode overflow: " + usedBytecodes + " (" + bytecodePercentage + "%)" + " Round: " + startRound + " -> " + endRound);
-        } else if (bytecodePercentage > 90) {
+        } else if (bytecodePercentage > 95) {
             System.out.println(rc.getLocation() + " " + rc.getType() + " High bytecode usage: " + usedBytecodes + " (" + bytecodePercentage + "%)");
         }
     }
