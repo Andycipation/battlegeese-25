@@ -659,7 +659,6 @@ public class Mopper extends Unit {
 
             final var paintTowerInfo = rc.senseRobotAtLocation(paintTowerLoc);
             if (!Globals.isAllyPaintTower(paintTowerInfo)) {
-                System.out.println("Our paint tower got destroyed and changed to something else!");
                 paintTowerLoc = null;
                 yieldStrategy();
                 return;
