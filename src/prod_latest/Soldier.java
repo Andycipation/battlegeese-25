@@ -430,7 +430,7 @@ public class Soldier extends Unit {
             if (state == StrategyState.BUILDING_RUIN) {
                 turnsSinceInterestingActivity = 0;
                 // TODO: get closest tower to being built based on the pattern and keep building it
-                System.out.println("used " + Clock.getBytecodeNum());
+                // System.out.println("used " + Clock.getBytecodeNum());
                 var ruinLoc = target;
                 if (rc.canSenseRobotAtLocation(ruinLoc)) {
                     // Tower has been finished
@@ -465,7 +465,7 @@ public class Soldier extends Unit {
             if (state == StrategyState.BUILDING_SRP) {
                 turnsSinceInterestingActivity = 0;
                 var srpCenter = target;
-                System.out.println("used " + Clock.getBytecodeNum());
+                // System.out.println("used " + Clock.getBytecodeNum());
                 if (!isSrpOkManual(srpCenter)) {
                     state = null;
                     // act();

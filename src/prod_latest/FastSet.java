@@ -19,6 +19,10 @@ public class FastSet {
         return values.indexOf(String.valueOf(value)) > -1;
     }
 
+    public int indexOf(MapLocation location) {
+        return values.indexOf(String.valueOf(encodeLocation(location)));
+    }
+
     public boolean add(MapLocation location) {
         return add(encodeLocation(location));
     }
