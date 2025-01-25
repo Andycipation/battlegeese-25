@@ -213,7 +213,7 @@ public class Splasher extends Unit {
             Logger.log("" + bestPoints);
             Logger.log("" + bestMove);
             Logger.log("" + splashSpots[bestAttack]);
-            if (rc.isActionReady() && rc.getPaint() >= SPLASHER_ATTACK_COST && bestMove != null && (bestPoints >= 9 || (bestPoints >= 2 && numAllyAdjacent[Direction.CENTER.getDirectionOrderNum()] >= 3))) {
+            if (rc.isActionReady() && rc.getPaint() >= SPLASHER_ATTACK_COST && bestMove != null && bestPoints >= 9) {
                 if (bestMove != Direction.CENTER) rc.move(bestMove);
                 // if (!rc.canAttack(splashSpots[bestAttack])) {
                 //     rc.setTimelineMarker("splasher bad!", 255, 255, 0);
@@ -268,7 +268,6 @@ public class Splasher extends Unit {
             if (!rc.canSenseRobotAtLocation(paintTowerLoc)) {
                 // We're still very far, just move closer
                 rc.move(dir);
-                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
                 return;
             }
 
@@ -283,14 +282,12 @@ public class Splasher extends Unit {
             final var nextLoc = rc.getLocation().add(dir);
             if (nextLoc.distanceSquaredTo(paintTowerLoc) > GameConstants.PAINT_TRANSFER_RADIUS_SQUARED) {
                 rc.move(dir);
-                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
                 return;
             }
 
             final var spaceToFill = refillTo - rc.getPaint();
             if (paintTowerInfo.getPaintAmount() >= spaceToFill) {
                 rc.move(dir);
-                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
                 if (rc.canTransferPaint(paintTowerLoc, -spaceToFill)) {
                     rc.transferPaint(paintTowerLoc, -spaceToFill);
                     yieldStrategy();
