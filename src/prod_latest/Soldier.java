@@ -1,7 +1,6 @@
 package prod_latest;
 
 import battlecode.common.*;
-import prod_latest.Soldier.EarlyGameStrategy.StrategyState;
 
 public class Soldier extends Unit {
     static SoldierStrategy strategy;
@@ -59,7 +58,7 @@ public class Soldier extends Unit {
         static UnitType getTowerToBuild() {
             // The first two are in case we drop below 2 towers
             final int[] ORDER = switch (mapSize) {
-                case SMALL -> new int[]{0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1};
+                case SMALL -> new int[]{2, 1, 2, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1};
                 case MEDIUM -> new int[]{0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0};
                 default -> new int[]{0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2};
             };

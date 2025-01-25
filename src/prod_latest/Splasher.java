@@ -1,7 +1,6 @@
 package prod_latest;
 
 import battlecode.common.*;
-import prod_latest.Splasher.SplasherStrategy;
 
 public class Splasher extends Unit {
 
