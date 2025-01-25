@@ -153,11 +153,16 @@ public abstract class Unit extends Robot {
         
         int destructThresold = switch (rc.getType()) {
             case UnitType.MOPPER -> 5;
-            case UnitType.SOLDIER -> 20;
-            case UnitType.SPLASHER -> 30;
-            default -> 10000;
+            case UnitType.SOLDIER -> 0;
+            case UnitType.SPLASHER -> 25;
+            default -> 0;
         };
-        if (isLateGame() && rc.getPaint() < destructThresold) {
+        boolean shouldDestruct = switch (mapSize) {
+            case SMALL -> false;
+            case MEDIUM -> numTowers >= 8;
+            case LARGE -> numTowers >= 12;
+        };
+        if (shouldDestruct && rc.getPaint() <= destructThresold) {
             rc.disintegrate();
         }
 
