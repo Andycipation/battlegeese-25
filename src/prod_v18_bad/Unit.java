@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v18_bad;
 
 import battlecode.common.*;
 
@@ -150,6 +150,22 @@ public abstract class Unit extends Robot {
         if (informedEmptyPaintLoc != null) {
             // rc.setIndicatorLine(locBeforeTurn, informedEmptyPaintLoc, 150, 150, 255);
         }
+        
+        int destructThresold = switch (rc.getType()) {
+            case UnitType.MOPPER -> 5;
+            case UnitType.SOLDIER -> 0;
+            case UnitType.SPLASHER -> 25;
+            default -> 0;
+        };
+        boolean shouldDestruct = switch (mapSize) {
+            case SMALL -> false;
+            case MEDIUM -> numTowers >= 8;
+            case LARGE -> numTowers >= 12;
+        };
+        if (shouldDestruct && rc.getPaint() <= destructThresold) {
+            rc.disintegrate();
+        }
+
     }
 
     void upgradeTowers() throws GameActionException {

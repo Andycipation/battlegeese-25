@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v18_bad;
 
 import java.util.Random;
 
@@ -355,5 +355,14 @@ public class Globals {
     public static void mdir(Direction dir) throws GameActionException {
         if (dir.getDirectionOrderNum() == 0) return;
         rc.move(dir);
+    }
+
+    public static boolean isLateGame() {
+        int roundThreshold = switch (mapSize) {
+            case SMALL -> 60;
+            case MEDIUM -> 120;
+            case LARGE -> 200;
+        };
+        return rc.getRoundNum() >= roundThreshold;
     }
 }

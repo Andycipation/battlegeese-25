@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v18_bad;
 
 import battlecode.common.*;
 
@@ -195,7 +195,6 @@ public class Tower extends Robot {
         static int initialSoldiersToSpawn;
         static Direction dirToCenter;
         static Direction nextSpawnDir;
-        static int numMoppersSpawned;
 
         public MapSpawnStrategy() {
             // Need to compute this in here, doesn't work to get the Globals variable
@@ -216,7 +215,6 @@ public class Tower extends Robot {
             } else {
                 initialSoldiersToSpawn = 0;
             }
-            numMoppersSpawned = 0;
 
             var mapCenter = new MapLocation(mapWidth / 2, mapHeight / 2);
             var myLoc = rc.getLocation();
@@ -248,6 +246,9 @@ public class Tower extends Robot {
                 case 1 -> UnitType.SPLASHER;
                 default -> UnitType.MOPPER;
             };
+            if (tryBuildUnit(unitPicked, nextSpawnDir) != null) {
+                nextSpawnDir = nextSpawnDir.rotateRight();
+            }
             tryBuildUnit(unitPicked, dirToCenter);
         }
 
@@ -285,14 +286,11 @@ public class Tower extends Robot {
                 return;
             }
 
-            if (numMoppersSpawned < 3) {
-                var enemyLoc = hasNearbyEnemy(UnitType.SOLDIER, UnitType.SPLASHER);
-                if (enemyLoc != null) {
-                    var dir = rc.getLocation().directionTo(enemyLoc);
-                    if (tryBuildUnit(UnitType.MOPPER, dir) != null) {
-                        numMoppersSpawned += 1;
-                        return;
-                    }
+            var enemyLoc = hasNearbyEnemy(UnitType.SOLDIER, UnitType.SPLASHER);
+            if (enemyLoc != null) {
+                var dir = rc.getLocation().directionTo(enemyLoc);
+                if (tryBuildUnit(UnitType.MOPPER, dir) != null) {
+                    return;
                 }
             }
 
@@ -302,14 +300,15 @@ public class Tower extends Robot {
                     if (informedEnemyPaintLoc != null) {
                         tryBuildRandomUnit(1, 1, 1);
                     } else if (rng.nextInt(3) == 0) {
-                        tryBuildUnit(UnitType.SOLDIER, dirToCenter);
+                        if (tryBuildUnit(UnitType.SOLDIER, nextSpawnDir) != null) {
+                            nextSpawnDir = nextSpawnDir.rotateRight();
+                        }
                     }
                 }
             } else {
                 // defense or money towers can always just produce units given theres enough chips :)
                 if (rc.getChips() > 1250) {
                     tryBuildUnit(UnitType.SOLDIER, dirToCenter);
-                    // tryBuildUnit(UnitType.MOPPER, dirToCenter);
                 }
             }
         }
