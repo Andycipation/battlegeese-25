@@ -150,6 +150,17 @@ public abstract class Unit extends Robot {
         if (informedEmptyPaintLoc != null) {
             // rc.setIndicatorLine(locBeforeTurn, informedEmptyPaintLoc, 150, 150, 255);
         }
+        
+        int destructThresold = switch (rc.getType()) {
+            case UnitType.MOPPER -> 5;
+            case UnitType.SOLDIER -> 20;
+            case UnitType.SPLASHER -> 30;
+            default -> 10000;
+        };
+        if (isLateGame() && rc.getPaint() < destructThresold) {
+            rc.disintegrate();
+        }
+
     }
 
     void upgradeTowers() throws GameActionException {
