@@ -195,7 +195,6 @@ public class Tower extends Robot {
         static int initialSoldiersToSpawn;
         static Direction dirToCenter;
         static Direction nextSpawnDir;
-        static int numMoppersSpawned;
 
         public MapSpawnStrategy() {
             // Need to compute this in here, doesn't work to get the Globals variable
@@ -216,7 +215,6 @@ public class Tower extends Robot {
             } else {
                 initialSoldiersToSpawn = 0;
             }
-            numMoppersSpawned = 0;
 
             var mapCenter = new MapLocation(mapWidth / 2, mapHeight / 2);
             var myLoc = rc.getLocation();
@@ -271,6 +269,15 @@ public class Tower extends Robot {
             return null;
         }
 
+        static boolean isLateGame() {
+            int roundThreshold = switch (mapSize) {
+                SMALL -> 60;
+                MEDIUM -> 120;
+                LARGE -> 200;
+            };
+            return roundNum >= roundThreshold;
+        }
+
         @Override
         public void act() throws GameActionException {
             if (roundNum > 20 && roundNum < roundNumAtSpawn + 2 && hasAdjacentAlly()) {
@@ -285,14 +292,11 @@ public class Tower extends Robot {
                 return;
             }
 
-            if (numMoppersSpawned < 3) {
-                var enemyLoc = hasNearbyEnemy(UnitType.SOLDIER, UnitType.SPLASHER);
-                if (enemyLoc != null) {
-                    var dir = rc.getLocation().directionTo(enemyLoc);
-                    if (tryBuildUnit(UnitType.MOPPER, dir) != null) {
-                        numMoppersSpawned += 1;
-                        return;
-                    }
+            var enemyLoc = hasNearbyEnemy(UnitType.SOLDIER, UnitType.SPLASHER);
+            if (enemyLoc != null) {
+                var dir = rc.getLocation().directionTo(enemyLoc);
+                if (tryBuildUnit(UnitType.MOPPER, dir) != null) {
+                    return;
                 }
             }
 
