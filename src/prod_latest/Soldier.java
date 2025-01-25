@@ -354,9 +354,9 @@ public class Soldier extends Unit {
 
             if (paintTowerLoc != null && rc.getNumberTowers() < 10) {
                 boolean shouldRefill = (rc.getPaint() < REFILL_THRESHOLD);
-                final int dist2ToTarget = chebyshevDist(locBeforeTurn, exploreTarget);
-                final int dist2ToRefill = chebyshevDist(locBeforeTurn, paintTowerLoc);
-                shouldRefill |= (dist2ToTarget > dist2ToRefill && rc.getPaint() < 120 && dist2ToRefill < 100);
+                final int distToTarget = chebyshevDist(locBeforeTurn, exploreTarget);
+                final int distToRefill = chebyshevDist(locBeforeTurn, paintTowerLoc);
+                shouldRefill |= (distToTarget > distToRefill && rc.getPaint() < 120 && distToRefill <= 8);
                 if (shouldRefill) {
                     exploreTarget = paintTowerLoc;
                     turnsWithoutExploreProgress = 0;
