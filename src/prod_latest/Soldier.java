@@ -400,7 +400,7 @@ public class Soldier extends Unit {
             // Check for nearby places to refill
             for (int i = nearbyAllyRobots.length; --i >= 0;) {
                 var robotInfo = nearbyAllyRobots[i];
-                if (robotInfo.team == myTeam && isWorthRefillingFrom(robotInfo)) {
+                if (robotInfo.type.isTowerType() && robotInfo.team == myTeam && isWorthRefillingFrom(robotInfo)) {
                     state = StrategyState.REFILLING;
                     target = robotInfo.location;
                     return;
