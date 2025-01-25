@@ -271,9 +271,9 @@ public class Tower extends Robot {
 
         static boolean isLateGame() {
             int roundThreshold = switch (mapSize) {
-                SMALL -> 60;
-                MEDIUM -> 120;
-                LARGE -> 200;
+                case SMALL -> 60;
+                case MEDIUM -> 120;
+                case LARGE -> 200;
             };
             return roundNum >= roundThreshold;
         }
@@ -303,10 +303,13 @@ public class Tower extends Robot {
             if (isPaintTower(rc.getType())) {
                 if (rc.getChips() > 1400 && rc.getPaint() >= 300) {
                     // Pick random unit to build (with weights)
+                    // if (isLateGame()) {
+                    //     tryBuildRandomUnit(1, 1, 1);
+                    // }
                     if (informedEnemyPaintLoc != null) {
                         tryBuildRandomUnit(1, 1, 1);
                     } else if (rng.nextInt(3) == 0) {
-                        if (tryBuildUnit(UnitType.SOLDIER, nextSpawnDir)) {
+                        if (tryBuildUnit(UnitType.SOLDIER, nextSpawnDir) != null) {
                             nextSpawnDir = nextSpawnDir.rotateRight();
                         }
                     }
