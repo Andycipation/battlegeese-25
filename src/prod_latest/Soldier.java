@@ -554,6 +554,7 @@ public class Soldier extends Unit {
                         rc.completeResourcePattern(srpCenter);
                         state = StrategyState.NO_PROJECT;
                         srpDone[srpCenter.y] |= 1L << srpCenter.x;
+                        return;
                     }
 
                     if (newLoc.distanceSquaredTo(srpCenter) <= 2 && rc.isActionReady() && paintLoc == null && rc.getChips() >= 300) {
