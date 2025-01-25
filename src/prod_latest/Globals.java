@@ -356,4 +356,13 @@ public class Globals {
         if (dir.getDirectionOrderNum() == 0) return;
         rc.move(dir);
     }
+
+    public static boolean isLateGame() {
+        int roundThreshold = switch (mapSize) {
+            case SMALL -> 60;
+            case MEDIUM -> 120;
+            case LARGE -> 200;
+        };
+        return rc.getRoundNum() >= roundThreshold;
+    }
 }
