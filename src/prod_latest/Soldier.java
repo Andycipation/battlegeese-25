@@ -620,7 +620,7 @@ public class Soldier extends Unit {
                         state = StrategyState.NO_PROJECT;
                         return;
                     }
-                    tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                    // tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
                 }
 
                 case StrategyState.NO_PROJECT -> {
@@ -632,9 +632,9 @@ public class Soldier extends Unit {
                         turnsWithoutExploreProgress = 0;
                     }
                     boolean painted = false;
-                    if (rc.senseMapInfo(newLoc).getPaint() == PaintType.EMPTY) {
-                        painted = tryPaintBelowSelf(getSrpPaintColor(newLoc));
-                    }
+                    // if (rc.senseMapInfo(newLoc).getPaint() == PaintType.EMPTY) {
+                    //     painted = tryPaintBelowSelf(getSrpPaintColor(newLoc));
+                    // }
 
                     if (!painted && rc.getRoundNum() >= 200) {
                         MapInfo[] attackableTiles = rc.senseNearbyMapInfos(newLoc, actionRadiusSquared);
