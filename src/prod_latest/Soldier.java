@@ -409,8 +409,8 @@ public class Soldier extends Unit {
         }
 
         static boolean isWorthRefillingFrom(RobotInfo allyTowerInfo) {
-            return (rc.getPaint() < 110 && allyTowerInfo.paintAmount >= 160 - rc.getPaint())
-                    || (!isPaintTower(allyTowerInfo.type) && allyTowerInfo.paintAmount >= 30);
+            final boolean isFree = (!isPaintTower(allyTowerInfo.type) && allyTowerInfo.paintAmount >= 30);
+            return (rc.getPaint() < 110 && (allyTowerInfo.paintAmount >= 160 - rc.getPaint() || isFree));
         }
 
         private static MapLocation getRandomNearbyLocation(MapLocation center, int minChebyshevDist, int maxChebyshevDist) {
