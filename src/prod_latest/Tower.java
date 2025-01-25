@@ -246,7 +246,7 @@ public class Tower extends Robot {
                 case 1 -> UnitType.SPLASHER;
                 default -> UnitType.MOPPER;
             };
-            if (tryBuildUnit(unitPicked, nextSpawnDir)) {
+            if (tryBuildUnit(unitPicked, nextSpawnDir) != null) {
                 nextSpawnDir = nextSpawnDir.rotateRight();
             }
             tryBuildUnit(unitPicked, dirToCenter);
