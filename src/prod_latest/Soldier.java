@@ -302,7 +302,10 @@ public class Soldier extends Unit {
         }
 
         static MapLocation getExploreTarget() {
-            return getRandomNearbyLocation(locBeforeTurn, 10, 20);
+            if (roundNum < 100 || informedEmptyPaintLoc == null)
+                return getRandomNearbyLocation(locBeforeTurn, 10, 20);
+            else
+                return project(rc.getLocation(), informedEmptyPaintLoc);
             // if (roundNum < 100) {
             //     return getRandomNearbyLocation(locBeforeTurn, 10, 20);
             // }
