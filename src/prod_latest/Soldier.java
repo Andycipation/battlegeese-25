@@ -17,7 +17,7 @@ public class Soldier extends Unit {
         upgradeTowers();
     }
 
-    static abstract class SoldierStrategy extends Soldier {
+    static abstract class SoldierStrategy {
 
         abstract public void act() throws GameActionException;
     }
