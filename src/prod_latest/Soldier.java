@@ -302,6 +302,9 @@ public class Soldier extends Unit {
         }
 
         static MapLocation getExploreTarget() {
+            if (roundNum > 300 && numTowers >= 8 && rng.nextInt(3) == 0 && informedEnemyPaintLoc != null) {
+                return informedEmptyPaintLoc;
+            }
             return getRandomNearbyLocation(locBeforeTurn, 10, 20);
             // if (roundNum < 100) {
             //     return getRandomNearbyLocation(locBeforeTurn, 10, 20);
