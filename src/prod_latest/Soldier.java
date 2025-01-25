@@ -346,7 +346,7 @@ public class Soldier extends Unit {
                 return;
             }
 
-            if (exploreTarget == null || turnsWithoutExploreProgress == 5 || locBeforeTurn.equals(exploreTarget)) {
+            if (exploreTarget == null || turnsWithoutExploreProgress >= 5 || locBeforeTurn.equals(exploreTarget)) {
                 exploreTarget = getExploreTarget();
                 turnsWithoutExploreProgress = 0;
             }
