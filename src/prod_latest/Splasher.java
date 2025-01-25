@@ -268,7 +268,6 @@ public class Splasher extends Unit {
             if (!rc.canSenseRobotAtLocation(paintTowerLoc)) {
                 // We're still very far, just move closer
                 rc.move(dir);
-                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
                 return;
             }
 
@@ -283,14 +282,12 @@ public class Splasher extends Unit {
             final var nextLoc = rc.getLocation().add(dir);
             if (nextLoc.distanceSquaredTo(paintTowerLoc) > GameConstants.PAINT_TRANSFER_RADIUS_SQUARED) {
                 rc.move(dir);
-                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
                 return;
             }
 
             final var spaceToFill = refillTo - rc.getPaint();
             if (paintTowerInfo.getPaintAmount() >= spaceToFill) {
                 rc.move(dir);
-                tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
                 if (rc.canTransferPaint(paintTowerLoc, -spaceToFill)) {
                     rc.transferPaint(paintTowerLoc, -spaceToFill);
                     yieldStrategy();
