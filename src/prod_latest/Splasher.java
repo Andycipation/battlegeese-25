@@ -213,7 +213,7 @@ public class Splasher extends Unit {
             Logger.log("" + bestPoints);
             Logger.log("" + bestMove);
             Logger.log("" + splashSpots[bestAttack]);
-            if (rc.isActionReady() && rc.getPaint() >= SPLASHER_ATTACK_COST && bestMove != null) {
+            if (rc.isActionReady() && rc.getPaint() >= SPLASHER_ATTACK_COST && bestMove != null && bestPoints >= 9) {
                 if (bestMove != Direction.CENTER) rc.move(bestMove);
                 // if (!rc.canAttack(splashSpots[bestAttack])) {
                 //     rc.setTimelineMarker("splasher bad!", 255, 255, 0);
