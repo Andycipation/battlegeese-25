@@ -1,6 +1,7 @@
 package prod_latest;
 
 import battlecode.common.*;
+import prod_latest.Soldier.EarlyGameStrategy.StrategyState;
 
 public class Soldier extends Unit {
     static SoldierStrategy strategy;
@@ -22,13 +23,13 @@ public class Soldier extends Unit {
         abstract public void act() throws GameActionException;
     }
 
-    // Moves towards `target` for `turns` turns.
     static class EarlyGameStrategy extends SoldierStrategy {
         enum StrategyState {
             BUILDING_RUIN,
             BUILDING_SRP,
             KITING,
-            EXPLORING,
+            REFILLING, // this is different from the state: (NO_PROJECT and returning to paint tower)
+            NO_PROJECT,
         }
 
         // The target for the current project:
@@ -36,10 +37,13 @@ public class Soldier extends Unit {
         // buildingSrp - proposed SRP center
         // kiting - the enemy tower
         // explore - explore location
-        public static MapLocation target;
+        static MapLocation exploreTarget;
+        static int turnsWithoutExploreProgress;
+
+        static MapLocation target;
         static StrategyState state;
-        static int stepsOut;
-        static int turnsLeftToExplore;
+        static int stepsOut; // for BUILDING_SRP
+        static int moveOutTurn; // for KITING
         static long[] srpBlocked;
         static long[] ruinBlocked;
         static long[] srpDone;
@@ -49,6 +53,7 @@ public class Soldier extends Unit {
             srpBlocked = new long[mapHeight];
             ruinBlocked = new long[mapHeight];
             srpDone = new long[mapHeight];
+            state = StrategyState.NO_PROJECT;
         }
 
         static UnitType getTowerToBuild() {
@@ -297,25 +302,72 @@ public class Soldier extends Unit {
             return 2 <= center.x && center.x < mapWidth - 2 && 2 <= center.y && center.y < mapHeight - 2;
         }
 
+        static MapLocation getExploreTarget() {
+            return getRandomNearbyLocation(locBeforeTurn, 10, 20);
+            // if (roundNum < 100) {
+            //     return getRandomNearbyLocation(locBeforeTurn, 10, 20);
+            // }
+            // int distD = locBeforeTurn.y;
+            // int distU = mapHeight - 1 - locBeforeTurn.y;
+            // int distL = locBeforeTurn.x;
+            // int distR = mapWidth - 1 - locBeforeTurn.x;
+            // var dir = switch (randChoice(distD, distU, distL, distR)) {
+            //     case 0 -> Direction.SOUTH;
+            //     case 1 -> Direction.NORTH;
+            //     case 2 -> Direction.WEST;
+            //     case 3 -> Direction.EAST;
+            //     default -> null;
+            // };
+            // assert(dir != null);
+            // return project(locBeforeTurn, locBeforeTurn.add(dir));
+        }
+
         void getProject() throws GameActionException {
             // Check if we need to attack an enemy tower
-            for (int i = nearbyRuins.length; --i >= 0;) {
-                var robotInfo = rc.senseRobotAtLocation(nearbyRuins[i]);
-                if (robotInfo != null && robotInfo.type.isTowerType() && robotInfo.team == opponentTeam) {
-                    state = StrategyState.KITING;
-                    target = robotInfo.location;
+            if (rc.getPaint() >= 60) {
+                for (int i = nearbyRuins.length; --i >= 0;) {
+                    var robotInfo = rc.senseRobotAtLocation(nearbyRuins[i]);
+                    if (robotInfo != null && robotInfo.type.isTowerType() && robotInfo.team == opponentTeam) {
+                        state = StrategyState.KITING;
+                        exploreTarget = null;
+                        moveOutTurn = -1;
+                        target = robotInfo.location;
+                        return;
+                    }
+                }
+            }
+
+            final int REFILL_THRESHOLD = 5;
+
+            if (state == StrategyState.BUILDING_RUIN || state == StrategyState.BUILDING_SRP) {
+                if (paintTowerLoc != null && rc.getNumberTowers() < 10 && rc.getPaint() < REFILL_THRESHOLD) {
+                    state = StrategyState.NO_PROJECT;
+                    exploreTarget = paintTowerLoc;
+                }
+                return;
+            }
+
+            if (exploreTarget == null || turnsWithoutExploreProgress == 5 || locBeforeTurn.equals(exploreTarget)) {
+                exploreTarget = getExploreTarget();
+                turnsWithoutExploreProgress = 0;
+            }
+
+            if (paintTowerLoc != null && rc.getNumberTowers() < 10) {
+                boolean shouldRefill = (rc.getPaint() < REFILL_THRESHOLD);
+                final int dist2ToTarget = chebyshevDist(locBeforeTurn, exploreTarget);
+                final int dist2ToRefill = chebyshevDist(locBeforeTurn, paintTowerLoc);
+                shouldRefill |= (dist2ToTarget > dist2ToRefill && rc.getPaint() < 120 && dist2ToRefill < 100);
+                if (shouldRefill) {
+                    exploreTarget = paintTowerLoc;
+                    turnsWithoutExploreProgress = 0;
                     return;
                 }
             }
 
-            if (state == StrategyState.BUILDING_RUIN || state == StrategyState.BUILDING_SRP) {
-                return;
-            }
-
+            // Check for nearby ruins
             if (rc.getNumberTowers() < 25) {
                 boolean startBuilding = (rc.getChips() > 500 || rc.getNumberTowers() >= 5);
                 if (startBuilding) {
-                    // Check for nearby ruins
                     MapLocation ruinLoc = null;
                     for (int i = nearbyRuins.length; --i >= 0;) {
                         MapLocation loc = nearbyRuins[i];
@@ -346,25 +398,36 @@ public class Soldier extends Unit {
                 }
             }
 
-            if (state == null || turnsLeftToExplore == 0 || rc.getLocation().equals(target)) {
-                state = StrategyState.EXPLORING;
-                turnsLeftToExplore = 8;
-                target = getRandomNearbyLocation(rc.getLocation(), 10, 20);
+            // Check for nearby places to refill
+            for (int i = nearbyAllyRobots.length; --i >= 0;) {
+                var robotInfo = nearbyAllyRobots[i];
+                if (robotInfo.team == myTeam && isWorthRefillingFrom(robotInfo)) {
+                    state = StrategyState.REFILLING;
+                    target = robotInfo.location;
+                    return;
+                }
             }
+        }
+
+        static boolean isWorthRefillingFrom(RobotInfo allyTowerInfo) {
+            return rc.getPaint() < 110 && allyTowerInfo.paintAmount >= 160 - rc.getPaint();
         }
 
         private static MapLocation getRandomNearbyLocation(MapLocation center, int minChebyshevDist, int maxChebyshevDist) {
             int dx = rng.nextInt(minChebyshevDist, maxChebyshevDist);
-            if (rng.nextInt(2) == 1) dx = -dx;
+            if (center.x < minChebyshevDist) {}
+            else if (center.x >= mapWidth - minChebyshevDist || rng.nextInt(2) == 1) dx = -dx;
             int dy = rng.nextInt(minChebyshevDist, maxChebyshevDist);
-            if (rng.nextInt(2) == 1) dy = -dy;
+            if (center.y < minChebyshevDist) {}
+            else if (center.y >= mapHeight - minChebyshevDist || rng.nextInt(2) == 1) dy = -dy;
+
             return new MapLocation(Math.clamp(center.x + dx, 0, mapWidth - 1), Math.clamp(center.y + dy, 0, mapHeight - 1));
         }
 
         static boolean tryRefillHint(MapLocation towerLoc) throws GameActionException {
             if (rc.canSenseRobotAtLocation(towerLoc)) {
                 var towerInfo = rc.senseRobotAtLocation(towerLoc);
-                if (towerInfo.team.equals(myTeam)) {
+                if (towerInfo.team == myTeam) {
                     int paintWanted = Math.min(towerInfo.paintAmount, paintCapacity - rc.getPaint());
                     if (rc.canTransferPaint(towerLoc, -paintWanted)) {
                         rc.transferPaint(towerLoc, -paintWanted);
@@ -430,17 +493,16 @@ public class Soldier extends Unit {
             getProject();
             switch (state) {
                 case StrategyState.BUILDING_RUIN -> {
+                    turnsWithoutExploreProgress = 0;
                     var ruinLoc = target;
                     if (rc.canSenseRobotAtLocation(ruinLoc)) {
                         // Tower has been finished
-                        state = null;
-                        // act();
+                        state = StrategyState.NO_PROJECT;
                         return;
                     }
                     if (!patternAppearsClear(ruinLoc, false)) {
                         // Enemy painted in the pattern
-                        state = null;
-                        // act();
+                        state = StrategyState.NO_PROJECT;
                         return;
                     }
 
@@ -462,10 +524,10 @@ public class Soldier extends Unit {
                 }
 
                 case StrategyState.BUILDING_SRP -> {
+                    turnsWithoutExploreProgress = 0;
                     var srpCenter = target;
                     if (!isSrpOkManual(srpCenter)) {
-                        state = null;
-                        // act();
+                        state = StrategyState.NO_PROJECT;
                         return;
                     }
 
@@ -473,7 +535,7 @@ public class Soldier extends Unit {
                         BugNav.moveToward(srpCenter);
                     } else {
                         if (stepsOut < 4) {
-                            // Take a step out to see if the SRP pattern is actually bad
+                            // Take a step out to see if the SRP location is actually bad
                             var dir = diagonalDirections[stepsOut++];
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
@@ -491,7 +553,7 @@ public class Soldier extends Unit {
 
                     if (newLoc.distanceSquaredTo(srpCenter) <= 2 && rc.isActionReady() && !painted) {
                         // SRP is finished
-                        state = null;
+                        state = StrategyState.NO_PROJECT;
                         srpDone[srpCenter.y] |= 1L << srpCenter.x;
                         return;
                     }
@@ -499,39 +561,77 @@ public class Soldier extends Unit {
                     // Try completing the SRP
                     if (rc.canCompleteResourcePattern(srpCenter)) {
                         rc.completeResourcePattern(srpCenter);
-                        state = null;
+                        state = StrategyState.NO_PROJECT;
                         srpDone[srpCenter.y] |= 1L << srpCenter.x;
                     }
                     return;
                 }
 
                 case StrategyState.KITING -> {
+                    turnsWithoutExploreProgress = 0;
                     if (!rc.canSenseRobotAtLocation(target)) {
-                        state = null;
-                        // act();
+                        state = StrategyState.NO_PROJECT;
                         return;
                     }
-                    RobotInfo robotInfo = rc.senseRobotAtLocation(target);
+                    var robotInfo = rc.senseRobotAtLocation(target);
                     if (robotInfo.team.equals(myTeam)) {
-                        state = null;
+                        state = StrategyState.NO_PROJECT;
                         return;
                     }
                     if (tryAttack(target)) {
                         var curLoc = rc.getLocation();
                         var reflected = new MapLocation(2 * curLoc.x - target.x, 2 * curLoc.y - target.y);
                         BugNav.moveToward(reflected);
+                        moveOutTurn = roundNum;
                     } else {
+                        if (rc.getPaint() < 50 && moveOutTurn == roundNum - 1) {
+                            // Wait one turn so we can move in and then out the very next turn
+                            return;
+                        }
                         BugNav.moveToward(target);
                         tryAttack(target);
                     }
                     return;
                 }
 
-                case StrategyState.EXPLORING -> {
-                    // Just explore towards target
-                    turnsLeftToExplore -= 1;
-                    BugNav.moveToward(target);
+                case StrategyState.REFILLING -> {
+                    turnsWithoutExploreProgress = 0;
+                    var towerLoc = target;
+                    if (!rc.canSenseRobotAtLocation(towerLoc)) {
+                        // The tower got destroyed
+                        state = StrategyState.NO_PROJECT;
+                        // act();
+                        return;
+                    }
+                    var towerInfo = rc.senseRobotAtLocation(towerLoc);
+                    if (!towerInfo.team.equals(myTeam)) {
+                        state = StrategyState.NO_PROJECT;
+                        // act();
+                        return;
+                    }
+                    if (!isWorthRefillingFrom(towerInfo)) {
+                        state = StrategyState.NO_PROJECT;
+                        // act();
+                        return;
+                    }
+                    BugNav.moveToward(towerLoc);
+                    int paintWanted = Math.min(towerInfo.paintAmount, paintCapacity - rc.getPaint());
+                    if (rc.canTransferPaint(towerLoc, -paintWanted)) {
+                        rc.transferPaint(towerLoc, -paintWanted);
+                        state = StrategyState.NO_PROJECT;
+                        return;
+                    }
+                    tryPaintBelowSelf(getSrpPaintColor(rc.getLocation()));
+                }
+
+                case StrategyState.NO_PROJECT -> {
+                    BugNav.moveToward(exploreTarget);
                     var newLoc = rc.getLocation();
+                    if (newLoc.distanceSquaredTo(exploreTarget) >= locBeforeTurn.distanceSquaredTo(exploreTarget)) {
+                        turnsWithoutExploreProgress += 1;
+                    } else {
+                        turnsWithoutExploreProgress = 0;
+                    }
                     boolean painted = false;
                     if (rc.senseMapInfo(newLoc).getPaint() == PaintType.EMPTY) {
                         painted = tryPaintBelowSelf(getSrpPaintColor(newLoc));
@@ -541,7 +641,7 @@ public class Soldier extends Unit {
                         MapInfo[] attackableTiles = rc.senseNearbyMapInfos(newLoc, actionRadiusSquared);
                         for (int i = attackableTiles.length; --i >= 0;) {
                             MapInfo tile = attackableTiles[i];
-                            MapLocation loc = tile.getMapLocation();
+                            var loc = tile.getMapLocation();
                             if (!tile.getPaint().isAlly() && tryPaint(loc, getSrpPaintColor(loc))) {
                                 break;
                             }
@@ -549,25 +649,21 @@ public class Soldier extends Unit {
                     }
                     // Always try to complete any resource pattern in range
                     for (int i = nearbyMapInfos.length; --i >= 0;) {
-                        MapLocation loc = nearbyMapInfos[i].getMapLocation();
+                        var loc = nearbyMapInfos[i].getMapLocation();
                         if (isInSrpCenterLocation(loc) && rc.canCompleteResourcePattern(loc)) {
                             rc.completeResourcePattern(loc);
                         }
                     }
+                    tryRefill();
                 }
 
-                default -> {
-                    // Soldier StrategyState should never be null after getting a project
-                    assert(false);
-                }
             }
 
-            tryRefill();
         }
 
         @Override
         public String toString() {
-            return "EarlyGameStrategy " + state + " " + target;
+            return "EarlyGameStrategy, explore to " + exploreTarget + ", state " + state + " " + target;
         }
     }
 }
