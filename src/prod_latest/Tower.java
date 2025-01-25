@@ -306,14 +306,15 @@ public class Tower extends Robot {
                     if (informedEnemyPaintLoc != null) {
                         tryBuildRandomUnit(1, 1, 1);
                     } else if (rng.nextInt(3) == 0) {
-                        tryBuildUnit(UnitType.SOLDIER, dirToCenter);
+                        if (tryBuildUnit(UnitType.SOLDIER, nextSpawnDir)) {
+                            nextSpawnDir = nextSpawnDir.rotateRight();
+                        }
                     }
                 }
             } else {
                 // defense or money towers can always just produce units given theres enough chips :)
                 if (rc.getChips() > 1250) {
                     tryBuildUnit(UnitType.SOLDIER, dirToCenter);
-                    // tryBuildUnit(UnitType.MOPPER, dirToCenter);
                 }
             }
         }
