@@ -544,13 +544,12 @@ public class Soldier extends Unit {
                     final var newLoc = rc.getLocation();
 
                     // Try painting
-                    boolean painted = false;
                     final var paintLoc = locInPatternToAttack(srpCenter, null);
                     if (paintLoc != null) {
-                        painted = tryPaint(paintLoc, getSrpPaintColor(paintLoc));
+                        tryPaint(paintLoc, getSrpPaintColor(paintLoc));
                     }
 
-                    if (newLoc.distanceSquaredTo(srpCenter) <= 2 && rc.isActionReady() && !painted) {
+                    if (newLoc.distanceSquaredTo(srpCenter) <= 2 && rc.isActionReady() && paintLoc == null) {
                         // SRP is finished
                         state = StrategyState.NO_PROJECT;
                         srpDone[srpCenter.y] |= 1L << srpCenter.x;
