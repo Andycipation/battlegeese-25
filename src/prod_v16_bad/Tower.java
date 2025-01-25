@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v16_bad;
 
 import battlecode.common.*;
 
@@ -270,12 +270,12 @@ public class Tower extends Robot {
         }
 
         static boolean isLateGame() {
-            int roundThreshold = switch (mapSize) {
-                case SMALL -> 60;
-                case MEDIUM -> 120;
-                case LARGE -> 200;
+            final int towerCntThreshold = switch (mapSize) {
+                case SMALL -> 3;
+                case MEDIUM -> 5;
+                case LARGE -> 7;
             };
-            return roundNum >= roundThreshold;
+            return rc.getNumberTowers() >= towerCntThreshold;
         }
 
         @Override
@@ -295,29 +295,29 @@ public class Tower extends Robot {
             var enemyLoc = hasNearbyEnemy(UnitType.SOLDIER, UnitType.SPLASHER);
             if (enemyLoc != null) {
                 var dir = rc.getLocation().directionTo(enemyLoc);
-                if (tryBuildUnit(UnitType.MOPPER, dir) != null) {
-                    return;
-                }
+                tryBuildUnit(UnitType.MOPPER, dir);
+                // if (tryBuildUnit(UnitType.MOPPER, dir) != null) {
+                //     return;
+                // }
+                return;
             }
 
-            if (isPaintTower(rc.getType())) {
-                if (rc.getChips() > 1400 && rc.getPaint() >= 300) {
-                    // Pick random unit to build (with weights)
-                    // if (isLateGame()) {
-                    //     tryBuildRandomUnit(1, 1, 1);
-                    // }
-                    if (informedEnemyPaintLoc != null) {
-                        tryBuildRandomUnit(1, 1, 1);
-                    } else if (rng.nextInt(3) == 0) {
-                        if (tryBuildUnit(UnitType.SOLDIER, nextSpawnDir) != null) {
-                            nextSpawnDir = nextSpawnDir.rotateRight();
-                        }
-                    }
-                }
-            } else {
+            if (!isPaintTower(rc.getType())) {
                 // defense or money towers can always just produce units given theres enough chips :)
                 if (rc.getChips() > 1250) {
-                    tryBuildUnit(UnitType.SOLDIER, dirToCenter);
+                    var unit = (isLateGame() ? UnitType.SPLASHER : UnitType.SOLDIER);
+                    tryBuildUnit(unit, dirToCenter);
+                }
+                return;
+            }
+
+            boolean shouldSpawn = (rc.getNumberTowers() == 25 || (rc.getChips() > 1400 && rc.getPaint() >= 300));
+            if (shouldSpawn) {
+                // Pick random unit to build (with weights)
+                if (isLateGame()) {
+                    tryBuildRandomUnit(1, 2, 0);
+                } else {
+                    tryBuildRandomUnit(5, 2, 1);
                 }
             }
         }

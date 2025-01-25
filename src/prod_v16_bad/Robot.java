@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v16_bad;
 
 import battlecode.common.*;
 
