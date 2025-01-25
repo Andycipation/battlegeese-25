@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v16_bad;
 
 import battlecode.common.*;
 
@@ -58,7 +58,7 @@ public class Soldier extends Unit {
         static UnitType getTowerToBuild() {
             // The first two are in case we drop below 2 towers
             final int[] ORDER = switch (mapSize) {
-                case SMALL -> new int[]{0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1};
+                case SMALL -> new int[]{2, 1, 2, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1};
                 case MEDIUM -> new int[]{0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0};
                 default -> new int[]{0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2};
             };
@@ -302,7 +302,10 @@ public class Soldier extends Unit {
         }
 
         static MapLocation getExploreTarget() {
-            return getRandomNearbyLocation(locBeforeTurn, 10, 20);
+            if (roundNum < 100 || informedEmptyPaintLoc == null)
+                return getRandomNearbyLocation(locBeforeTurn, 10, 20);
+            else
+                return project(rc.getLocation(), informedEmptyPaintLoc);
             // if (roundNum < 100) {
             //     return getRandomNearbyLocation(locBeforeTurn, 10, 20);
             // }

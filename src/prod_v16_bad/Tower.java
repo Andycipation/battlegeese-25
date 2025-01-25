@@ -1,4 +1,4 @@
-package prod_latest;
+package prod_v16_bad;
 
 import battlecode.common.*;
 
@@ -195,7 +195,6 @@ public class Tower extends Robot {
         static int initialSoldiersToSpawn;
         static Direction dirToCenter;
         static Direction nextSpawnDir;
-        static int numMoppersSpawned;
 
         public MapSpawnStrategy() {
             // Need to compute this in here, doesn't work to get the Globals variable
@@ -216,7 +215,6 @@ public class Tower extends Robot {
             } else {
                 initialSoldiersToSpawn = 0;
             }
-            numMoppersSpawned = 0;
 
             var mapCenter = new MapLocation(mapWidth / 2, mapHeight / 2);
             var myLoc = rc.getLocation();
@@ -271,6 +269,15 @@ public class Tower extends Robot {
             return null;
         }
 
+        static boolean isLateGame() {
+            final int towerCntThreshold = switch (mapSize) {
+                case SMALL -> 3;
+                case MEDIUM -> 5;
+                case LARGE -> 7;
+            };
+            return rc.getNumberTowers() >= towerCntThreshold;
+        }
+
         @Override
         public void act() throws GameActionException {
             if (roundNum > 20 && roundNum < roundNumAtSpawn + 2 && hasAdjacentAlly()) {
@@ -285,31 +292,32 @@ public class Tower extends Robot {
                 return;
             }
 
-            if (numMoppersSpawned < 3) {
-                var enemyLoc = hasNearbyEnemy(UnitType.SOLDIER, UnitType.SPLASHER);
-                if (enemyLoc != null) {
-                    var dir = rc.getLocation().directionTo(enemyLoc);
-                    if (tryBuildUnit(UnitType.MOPPER, dir) != null) {
-                        numMoppersSpawned += 1;
-                        return;
-                    }
-                }
+            var enemyLoc = hasNearbyEnemy(UnitType.SOLDIER, UnitType.SPLASHER);
+            if (enemyLoc != null) {
+                var dir = rc.getLocation().directionTo(enemyLoc);
+                tryBuildUnit(UnitType.MOPPER, dir);
+                // if (tryBuildUnit(UnitType.MOPPER, dir) != null) {
+                //     return;
+                // }
+                return;
             }
 
-            if (isPaintTower(rc.getType())) {
-                if (rc.getChips() > 1400 && rc.getPaint() >= 300) {
-                    // Pick random unit to build (with weights)
-                    if (informedEnemyPaintLoc != null) {
-                        tryBuildRandomUnit(1, 1, 1);
-                    } else if (rng.nextInt(3) == 0) {
-                        tryBuildUnit(UnitType.SOLDIER, dirToCenter);
-                    }
-                }
-            } else {
+            if (!isPaintTower(rc.getType())) {
                 // defense or money towers can always just produce units given theres enough chips :)
                 if (rc.getChips() > 1250) {
-                    tryBuildUnit(UnitType.SOLDIER, dirToCenter);
-                    // tryBuildUnit(UnitType.MOPPER, dirToCenter);
+                    var unit = (isLateGame() ? UnitType.SPLASHER : UnitType.SOLDIER);
+                    tryBuildUnit(unit, dirToCenter);
+                }
+                return;
+            }
+
+            boolean shouldSpawn = (rc.getNumberTowers() == 25 || (rc.getChips() > 1400 && rc.getPaint() >= 300));
+            if (shouldSpawn) {
+                // Pick random unit to build (with weights)
+                if (isLateGame()) {
+                    tryBuildRandomUnit(1, 2, 0);
+                } else {
+                    tryBuildRandomUnit(5, 2, 1);
                 }
             }
         }
