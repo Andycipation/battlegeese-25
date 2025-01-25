@@ -549,18 +549,18 @@ public class Soldier extends Unit {
                         tryPaint(paintLoc, getSrpPaintColor(paintLoc));
                     }
 
-                    if (newLoc.distanceSquaredTo(srpCenter) <= 2 && rc.isActionReady() && paintLoc == null) {
-                        // SRP is finished
-                        state = StrategyState.NO_PROJECT;
-                        srpDone[srpCenter.y] |= 1L << srpCenter.x;
-                        return;
-                    }
-
                     // Try completing the SRP
                     if (rc.canCompleteResourcePattern(srpCenter)) {
                         rc.completeResourcePattern(srpCenter);
                         state = StrategyState.NO_PROJECT;
                         srpDone[srpCenter.y] |= 1L << srpCenter.x;
+                    }
+
+                    if (newLoc.distanceSquaredTo(srpCenter) <= 2 && rc.isActionReady() && paintLoc == null && rc.getChips() >= 300) {
+                        // SRP is finished
+                        state = StrategyState.NO_PROJECT;
+                        srpDone[srpCenter.y] |= 1L << srpCenter.x;
+                        return;
                     }
                     return;
                 }
