@@ -271,9 +271,9 @@ public class Tower extends Robot {
 
         static boolean isLateGame() {
             final int towerCntThreshold = switch (mapSize) {
-                case SMALL -> 5;
-                case MEDIUM -> 8;
-                case LARGE -> 12;
+                case SMALL -> 3;
+                case MEDIUM -> 5;
+                case LARGE -> 7;
             };
             return rc.getNumberTowers() >= towerCntThreshold;
         }
@@ -315,9 +315,9 @@ public class Tower extends Robot {
             if (shouldSpawn) {
                 // Pick random unit to build (with weights)
                 if (isLateGame()) {
-                    tryBuildRandomUnit(0, 2, 1);
+                    tryBuildRandomUnit(1, 2, 0);
                 } else {
-                    tryBuildRandomUnit(5, 2, 0);
+                    tryBuildRandomUnit(5, 2, 1);
                 }
             }
         }
